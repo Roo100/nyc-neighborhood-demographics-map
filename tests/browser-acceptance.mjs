@@ -36,6 +36,29 @@ async function checkViewport(label, viewport) {
   await page.locator('.leaflet-tile').first().waitFor({timeout:15000});
   assert.ok(await page.locator('.leaflet-tile').count()>0,'Street-grid tiles are present');
   assert.ok(await page.locator('.leaflet-cityMask-pane').count()===1,'City clipping pane is present');
+  const matteCounts = await page.locator('canvas.city-matte-canvas').evaluate(canvas=>{
+    const ctx=canvas.getContext('2d'),d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let transparent=0,opaque=0;
+    for(let i=3;i<d.length;i+=4*31){
+      if(d[i]===0)transparent++;
+      if(d[i]===255)opaque++;
+    }
+    return {transparent,opaque};
+  });
+  assert.ok(matteCounts.transparent>100 && matteCounts.opaque>100,
+    'City canvas mask needs both transparent NYC land and opaque outside-city areas: '+JSON.stringify(matteCounts));
+  if(label==='desktop'){
+    const manhattanClear=await page.evaluate(()=>{
+      const mapEl=document.getElementById('map');
+      const marker=[...document.querySelectorAll('.borough-label')].find(e=>e.textContent?.includes('Manhattan'));
+      const c=document.querySelector('canvas.city-matte-canvas');
+      const a=marker.getBoundingClientRect(),b=mapEl.getBoundingClientRect();
+      const x=Math.round(((a.left+a.width/2)-b.left)*c.width/b.width);
+      const y=Math.round(((a.top+a.height/2)-b.top)*c.height/b.height);
+      return c.getContext('2d').getImageData(x,y,1,1).data[3];
+    });
+    assert.equal(manhattanClear,0,'Manhattan landmark area must reveal the street grid through matte');
+  }
   assert.ok(await page.locator('#map .leaflet-control-attribution').count()===1,'Street source attribution remains visible');
   await page.locator('#map-detail').selectOption('comic');
   await page.waitForFunction(()=>document.querySelectorAll('.leaflet-tile').length===0);
