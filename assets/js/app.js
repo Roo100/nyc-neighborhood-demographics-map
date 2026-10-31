@@ -62,7 +62,8 @@ function styleFor(record){
 // Fill the viewport OUTSIDE the official NYC land polygons. A single custom
 // canvas layer avoids Leaflet polygon clipping of a gigantic exterior ring;
 // the old approach accidentally hid roads inside NYC rather than outside.
-const CityMatte=L.Layer.extend({
+function createCityMatte(features){
+ const CityMatte=L.Layer.extend({
   initialize(features){this._features=features;},
   onAdd(map){
     this._map=map;
@@ -109,9 +110,11 @@ const CityMatte=L.Layer.extend({
     }
     ctx.globalCompositeOperation='source-over';
   }
-});
+ });
+ return new CityMatte(features);
+}
 function initializeStreetMap(features){
-  outsideCityMask=new CityMatte(features);
+  outsideCityMask=createCityMatte(features);
   streetTiles=L.tileLayer(STREETS_URL,{
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     maxZoom:19,updateWhenIdle:true,keepBuffer:1
