@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=education-review-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=grid-board-lookup-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=education-review-1"></script>
+  <script type="module" src="assets/js/app.js?v=grid-board-lookup-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -59,7 +59,15 @@
           <div class="map-key" aria-label="Map legend"><div class="key-title">Color your NYC</div><div><span class="swatch bronx"></span> Bronx</div><div><span class="swatch brooklyn"></span> Brooklyn</div><div><span class="swatch manhattan"></span> Manhattan</div><div><span class="swatch queens"></span> Queens</div><div><span class="swatch staten"></span> Staten Island</div><div class="key-note">⚾ 🎡 🏙️ 🌐 ⛴️ Explore neighborhoods, community boards, school districts or K–12 school sites. Districts are not attendance zones; zoom for NYC streets.</div></div>
           <p class="street-map-note" id="street-map-note" aria-live="polite">Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.</p>
         </div>
-        <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl><p id="school-pins-count" class="school-pins-count" aria-live="polite" hidden>Zoom in to see mapped school pins.</p>
+        <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl>
+          <section id="point-board-panel" class="point-board-panel" aria-labelledby="point-board-title" aria-live="polite">
+            <h3 id="point-board-title"><span aria-hidden="true">📍</span> Community board at map point</h3>
+            <p id="point-board-result">Click a street or place on the map to identify its community board from official 2026 boundaries.</p>
+            <p id="point-board-coordinates" class="point-board-coordinates"></p>
+            <button type="button" id="identify-board-center" class="point-board-center" disabled>Identify board at map center</button>
+            <a class="point-board-directory" href="https://www.nyc.gov/site/communityboards/index.page" target="_blank" rel="noopener noreferrer">Official NYC community board directory</a>
+          </section>
+          <p id="school-pins-count" class="school-pins-count" aria-live="polite" hidden>Zoom in to see mapped school pins.</p>
         
         <div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, race and ethnicity, voter registration, and election layers remain unavailable until their source data and geographic alignment pass validation.</p></div><div class="geography-links"><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official 2020 NTAs</a><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/5crt-au7u">Official 2026 community districts</a></div></aside>
       <section class="civic-panel" aria-labelledby="civic-panel-title">
