@@ -68,6 +68,9 @@ async function checkViewport(label, viewport) {
 
   // Regression: the floating 'Color Your NYC' legend must not cover +/- zoom
   // (as reported in the screenshot) or the actual metric distance scale.
+  // Mobile's tall filter panel can leave the map below the initial viewport.
+  // Hit-testing uses viewport coordinates, so bring the control on-screen first.
+  await page.locator('#map .leaflet-control-zoom').scrollIntoViewIfNeeded();
   const mapControls=await page.evaluate(()=>{
     const root=document.querySelector('#map');
     const legend=document.querySelector('.map-key');
