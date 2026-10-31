@@ -1,0 +1,46 @@
+name: Pin official NYC community-board boundaries (research branch)
+on:
+  push:
+    branches:
+      - feature/nyc-civic-community-boards
+    paths:
+      - scripts/fetch_civic_districts.py
+      - .github/workflows/pin-community-boards.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch official DCP 2026 community districts and validate 59 boards plus 12 JIAs
+        run: python3 scripts/fetch_civic_districts.py
+      - name: Save validated geographic snapshot to review branch only
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = 'feature/nyc-civic-community-boards'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/civic/community-districts-2026.geojson data/civic/community-districts-2026-validation.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin and audit DCP 2026 community district boundaries"
+            git push origin HEAD:feature/nyc-civic-community-boards
+          fi
+      - name: Archive source validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: civic-geojson-validation
+          path: |
+            data/civic/community-districts-2026-validation.json
+          if-no-files-found: warn
+          retention-days: 14
