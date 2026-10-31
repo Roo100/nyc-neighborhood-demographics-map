@@ -11,9 +11,10 @@ test('NYC-only street view renders roads with official land mask and retains com
   assert.ok(js.includes("map=L.map('map'"));
   assert.ok(js.includes("L.tileLayer(STREETS_URL"));
   assert.ok(js.includes("https://tile.openstreetmap.org/{z}/{x}/{y}.png"));
-  assert.ok(js.includes("function cityMaskRings(features)"));
-  assert.ok(js.includes("fillRule:'evenodd'"));
-  assert.ok(js.includes("outsideCityMask=L.polygon("));
+  assert.ok(js.includes("function createCityMatte(features)"));
+  assert.ok(js.includes("ctx.fill('evenodd')"));
+  assert.ok(js.includes("ctx.globalCompositeOperation='destination-out'"));
+  assert.ok(js.includes("outsideCityMask=createCityMatte(features)"));
   assert.ok(html.includes('<option value="streets" selected>Streets + grid</option>'));
   assert.ok(html.includes('<option value="comic">Neon-only</option>'));
   assert.ok(js.includes("attribution:'&copy;"));
