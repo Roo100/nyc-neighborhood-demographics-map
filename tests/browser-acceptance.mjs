@@ -158,7 +158,10 @@ async function checkViewport(label, viewport) {
   await page.locator('#school-find').click();
   await page.locator('#detail-name').filter({hasText:bronxPublicSchool.properties.name}).waitFor();
   assert.ok((await page.locator('#detail-meta').textContent()).includes('Grade span'));
-  await page.waitForFunction(()=>document.querySelectorAll('.leaflet-interactive').length>0);
+  await page.waitForFunction(()=>{
+    const text=document.getElementById('school-pins-count')?.textContent||'';
+    return /^[1-9][0-9]* school pins visible/.test(text);
+  },null,{timeout:15000});
   await page.waitForTimeout(500);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-k12-school.png',fullPage:true});
   assert.ok(await page.locator('#map').isVisible());
