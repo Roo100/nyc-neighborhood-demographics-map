@@ -30,6 +30,7 @@
       <section class="controls" aria-label="Map controls">
         <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option></select></div>
         <div class="field"><label for="borough">Borough</label><select id="borough" disabled><option value="all">All five boroughs</option></select></div>
+        <div class="field community-board-field" id="board-picker-field" hidden><label for="community-board">Community board</label><select id="community-board" disabled><option value="">Select a community board</option></select></div>
         <div class="field map-view-field"><label for="map-detail">Map detail</label><select id="map-detail" disabled><option value="streets" selected>Streets + grid</option><option value="comic">Neon-only</option></select></div>
         <div class="field search-field"><label for="neighborhood">Find neighborhood or NTA code</label><input id="neighborhood" type="search" placeholder="Search e.g. Harlem, Astoria, BX0101" autocomplete="off" list="nta-options" disabled /><datalist id="nta-options"></datalist></div>
         <button id="search-button" type="button" disabled>Find on map</button>
