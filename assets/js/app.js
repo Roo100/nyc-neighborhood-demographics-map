@@ -2,12 +2,20 @@ import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 const NYC_BOUNDS = [[40.49,-74.27],[40.94,-73.68]];
+// A bad or differently projected polygon must not zoom the map out to the world.
+function plausibleNYCBounds(bounds){
+  return bounds?.isValid() && bounds.getSouth() >= 40.30 && bounds.getNorth() <= 41.10 &&
+    bounds.getWest() >= -74.60 && bounds.getEast() <= -73.40;
+}
+function fitNYCBounds(bounds, options={padding:[22,22]}){
+  map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
+}
 const ui = Object.fromEntries(['borough','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, selected=null, byCode=new Map();
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
-  map=L.map('map',{zoomControl:true,scrollWheelZoom:true}).fitBounds(NYC_BOUNDS);
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:true,minZoom:8}).fitBounds(NYC_BOUNDS);
   // OpenStreetMap Standard does not require a commercial API key. See https://operations.osmfoundation.org/policies/tiles/
   // Keep the boundary vectors usable even if the background tile provider is unavailable.
   const basemap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -38,7 +46,7 @@ function display(record){
   }
   geoLayer.eachLayer(layer => {const r=byCode.get(layer.feature.properties.__ntaCode);layer.setStyle(r===record?{color:'#f4b943',weight:3,fillColor:'#39437d',fillOpacity:.9}:baseStyle(r));});
   const layer=geoLayer.getLayers().find(x=>x.feature.properties.__ntaCode===record.code);
-  if(layer){layer.bringToFront();map.fitBounds(layer.getBounds(),{padding:[35,35],maxZoom:14});}
+  if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[35,35],maxZoom:14});}
 }
 function render(){
   const borough=ui.borough.value;
@@ -50,7 +58,7 @@ function render(){
   ui['nta-options'].replaceChildren();
   for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){const option=document.createElement('option');option.value=`${r.name} (${r.code})`;ui['nta-options'].append(option);}
   if(selected && !visible.includes(selected)){selected=null;ui['detail-name'].textContent='Select a neighborhood';ui['detail-intro'].textContent='Click a polygon or search for a 2020 NTA.';ui['detail-meta'].replaceChildren();}
-  if(visible.length) map.fitBounds(geoLayer.getBounds(),{padding:[22,22]});
+  if(visible.length) fitNYCBounds(geoLayer.getBounds());
 }
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status(`Selected ${found.name} (${found.code}), ${found.borough}.`);}else{status('No matching NTA in the selected borough. Try another spelling or clear the borough filter.',true);}}
 function wire(){
