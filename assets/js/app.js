@@ -337,109 +337,53 @@ function addCouncilEnrollmentToPopup(root,latlng,legislative){
   section.append(summary,list,note);root.append(section);
 }
 function showCivicPopup(latlng,neighborhood,communityMatch){
+  // Keep the neighborhood popup demographic-only. Civic and school lookups
+  // remain in the dedicated dashboard controls and sidebar, not this card.
   const root=document.createElement('div');
   root.className='nyc-pop-info-card';
   const eyebrow=document.createElement('div');
   eyebrow.className='nyc-pop-info-eyebrow';
-  eyebrow.textContent='NYC POP! · NEIGHBORHOOD & CIVIC INFO';
+  eyebrow.textContent='NYC POP! · NEIGHBORHOOD DEMOGRAPHICS';
   root.append(eyebrow);
   const title=document.createElement('h3');
   title.className='nyc-pop-info-title';
-  title.textContent=neighborhood?.name||(ui['civic-layer'].value==='enrollment'&&selectedCouncil?'City Council District '+selectedCouncil.code:'Selected NYC location');
+  title.textContent=neighborhood?.name||'Selected NYC location';
   root.append(title);
   if(neighborhood?.borough){
     const subtitle=document.createElement('p');
     subtitle.className='nyc-pop-info-subtitle';
-    subtitle.textContent=neighborhood.borough+' · NYC';
+    subtitle.textContent=neighborhood.borough+' · 2020–2024 ACS estimates';
     root.append(subtitle);
   }
-  const facts=document.createElement('dl');
-  facts.className='nyc-pop-info-facts';
-  const row=(label,value)=>{
-    const dt=document.createElement('dt'),dd=document.createElement('dd');
-    dt.textContent=label;dd.textContent=value;facts.append(dt,dd);
-  };
-  let boardBorough;
-  if(communityMatch.status==='board'){
-    row('Community board',communityMatch.record.name);
-    boardBorough=communityMatch.record.borough;
-  }else if(communityMatch.status==='joint_interest'){
-    row('Community board','Joint Interest Area — no regular community board');
-    boardBorough=communityMatch.record.borough;
-  }else if(communityMatch.status==='boundary'){
-    row('Community board','District boundary — confirm the exact address');
-  }else if(communityMatch.status==='unavailable'){
-    row('Community board','Official boundaries loading or unavailable');
-  }else if(communityMatch.status==='outside'){
-    row('Community board','No mapped community board at this point');
-  }else{
-    row('Community board','Location could not be checked');
-  }
-  const schoolDistrict=lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng);
-  if(schoolDistrict.status==='match')
-    row('School district','Geographic District '+schoolDistrict.record.code);
-  else if(schoolDistrict.status==='boundary')
-    row('School district','District boundary — verify address');
-  else if(schoolDistrict.status==='unavailable')
-    row('School district','District data loading or unavailable');
-  else row('School district','No mapped geographic school district');
-  const borough=neighborhood?.borough||boardBorough;
-  if(borough&&BOROUGH_PRESIDENTS[borough])
-    row('Borough president',BOROUGH_PRESIDENTS[borough]);
-  // Legislative districts are independent 2026 DCP polygons, not an NTA
-  // lookup. The official directory only assigns names when verified.
-  const legislative=identifyLegislators(legislativeLookup,latlng.lat,latlng.lng);
-  for(const key of ['council','senate','assembly','congress']){
-    const matched=legislative[key];
-    const label={council:'City Council representative',senate:'NY State Senator',
-      assembly:'NY State Assembly district',congress:'US House district'}[key];
-    if(matched.status==='match'){
-      const code=matched.record.code;
-      const official=officialForDistrict(legislativeOfficials,key,code);
-      row(label,(official?official+' · ':'')+'District '+code+
-        (key==='senate'&&!official?' · see official directory':''));
-    }else if(matched.status==='boundary'){
-      row(label,'District boundary — verify address');
-    }else if(matched.status==='unavailable'){
-      row(label,'Legislative district data loading / unavailable');
-    }else{
-      row(label,'No matched district at this location');
+  const information=neighborhood&&acsReady?acsProfileRows(neighborhood):null;
+  if(information){
+    const facts=document.createElement('dl');
+    facts.className='nyc-pop-info-facts';
+    for(const [label,value] of information.rows){
+      const dt=document.createElement('dt'),dd=document.createElement('dd');
+      dt.textContent=label;dd.textContent=value;facts.append(dt,dd);
     }
+    root.append(facts);
+    const note=document.createElement('p');
+    note.className='nyc-pop-info-disclaimer';
+    note.textContent='Source: Census ACS 2020–2024, aggregated to NYC Planning neighborhood areas. Income is an approximate grouped-bin estimate; unreliable figures are withheld. Political enrollment is available separately by City Council district.';
+    root.append(note);
+  }else{
+    const note=document.createElement('p');
+    note.className='nyc-pop-info-disclaimer';
+    note.textContent=neighborhood?'Neighborhood demographic estimates are loading or unavailable.':'Select a neighborhood polygon to view its income, poverty, and racial/ethnic estimates. Council-district voter enrollment is available in its own map layer.';
+    root.append(note);
   }
-  root.append(facts);
-  if(neighborhood)addACSPopupInfo(root,neighborhood);
-  addCouncilEnrollmentToPopup(root,latlng,legislative);
-  const links=document.createElement('div');
-  links.className='nyc-pop-info-links';
-  for(const [label,url] of [
-    ['Community board contacts','https://www.nyc.gov/site/communityboards/index.page'],
-    ['NYC City Council',OFFICIAL_LEGISLATIVE_DIRS.council],
-    ['NY State Senate',OFFICIAL_LEGISLATIVE_DIRS.senate],
-    ['NY State Assembly',OFFICIAL_LEGISLATIVE_DIRS.assembly],
-    ['US House',OFFICIAL_LEGISLATIVE_DIRS.congress],
-    ['Browse K–12 schools','https://www.myschools.nyc/en/']
-  ]){
-    const a=document.createElement('a');
-    a.textContent=label;a.href=url;a.target='_blank';a.rel='noopener noreferrer';
-    links.append(a);
-  }
-  root.append(links);
-  const disclaimer=document.createElement('p');
-  disclaimer.className='nyc-pop-info-disclaimer';
-  disclaimer.textContent='All boundaries are assigned to this exact map point, not the entire neighborhood. Party enrollment is registration, not votes cast; attendance zones and enrollment rules are separate. Current officials should be confirmed in official directories.';
-  root.append(disclaimer);
-  // One card at a time. The phone version stays entirely *inside* the map
-  // instead of allowing Leaflet's anchored popup to clip above its top edge.
   map.closePopup();
   closeMobileCivicCard();
   if(map.getSize().x<600){
     const overlay=document.createElement('section');
     overlay.className='nyc-pop-mobile-overlay';
     overlay.setAttribute('role','dialog');
-    overlay.setAttribute('aria-label','Neighborhood and civic information');
+    overlay.setAttribute('aria-label','Neighborhood demographics');
     const close=document.createElement('button');
     close.type='button';close.className='nyc-pop-mobile-close';
-    close.textContent='×';close.setAttribute('aria-label','Close neighborhood information');
+    close.textContent='×';close.setAttribute('aria-label','Close neighborhood demographics');
     close.addEventListener('click',()=>overlay.remove());
     overlay.append(close,root);
     L.DomEvent.disableClickPropagation(overlay);
@@ -447,7 +391,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
     map.getContainer().append(overlay);
     return;
   }
-  L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,
+  L.popup({className:'nyc-pop-info-popup',maxWidth:335,minWidth:245,
     maxHeight:Math.max(220,Math.min(390,map.getSize().y-100)),autoPan:true,
     autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
     .setLatLng(latlng).setContent(root).openOn(map);
