@@ -412,12 +412,15 @@ async function loadEducationGeography(){
     '. Administrative boundaries are not attendance zones. Confirm Fall 2026 grades/admissions with NYCPS.';
 }
 function render(){
-  const borough=ui.borough.value;
+  const borough=ui.borough.value,mode=ui['civic-layer'].value;
   const visible=filterNtas(records,borough);
-  const boardMode=ui['civic-layer'].value==='boards'&&!!communityLayer;
-  geoLayer.clearLayers();
-  geoLayer.addData({type:'FeatureCollection',features:visible.map(r=>r.feature)});
-  const visibleBoards=communityBoards.filter(board=>borough==='all'||board.borough===borough);
+  const boardMode=mode==='boards'&&!!communityLayer;
+  const districtMode=mode==='schooldistricts'&&!!schoolDistrictLayer;
+  const schoolMode=mode==='schools'&&!!schoolMarkers;
+  const visibleBoards=communityBoards.filter(b=>borough==='all'||b.borough===borough);
+  const visibleSchools=filterSchoolLocations(schoolPoints,borough,ui['school-type'].value,'');
+
+  // Show only the controls that apply to this independently sourced geography.
   ui['board-picker-field'].hidden=!boardMode;
   ui['community-board'].disabled=!boardMode;
   ui['community-board'].replaceChildren();
@@ -432,45 +435,90 @@ function render(){
     }
     if(selectedCommunity)ui['community-board'].value=String(selectedCommunity.code);
   }
+  ui['education-picker-field'].hidden=!districtMode;
+  ui['education-picker'].disabled=!districtMode;
+  ui['education-picker'].replaceChildren();
+  const schoolPlaceholder=document.createElement('option');
+  schoolPlaceholder.value='';schoolPlaceholder.textContent='Select a school district';
+  ui['education-picker'].append(schoolPlaceholder);
+  if(districtMode){
+    for(const entry of schoolDistricts){
+      const o=document.createElement('option');
+      o.value=String(entry.code);o.textContent='School District '+entry.code;
+      ui['education-picker'].append(o);
+    }
+    if(selectedSchoolDistrict)ui['education-picker'].value=String(selectedSchoolDistrict.code);
+  }
+  ui['school-filter-field'].hidden=!schoolMode;
+  ui['school-search-field'].hidden=!schoolMode;
+  ui['school-type'].disabled=!schoolMode;
+  ui['school-search'].disabled=!schoolMode;
+  ui['school-find'].disabled=!schoolMode;
+
+  // Preserve the 2020 NTA source and its search when exploring neighborhoods.
+  geoLayer.clearLayers();
+  geoLayer.addData({type:'FeatureCollection',features:visible.map(r=>r.feature)});
+  ui['nta-options'].replaceChildren();
+  for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){
+    const option=document.createElement('option');
+    option.value=r.name+' ('+r.code+')';
+    ui['nta-options'].append(option);
+  }
+  ui.neighborhood.disabled=mode!=='nta';
+  ui['search-button'].disabled=mode!=='nta';
+  ui.neighborhood.placeholder=mode==='nta'?'Search e.g. Harlem, Astoria, BX0101':
+    'Return to Neighborhoods to search a 2020 NTA';
+
+  // Switch actual polygon layers, without pretending their boundaries coincide.
   if(boardMode){
     if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
+    if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
     communityLayer.clearLayers();
     communityLayer.addData({type:'FeatureCollection',features:visibleBoards.map(b=>b.feature)});
     if(!map.hasLayer(communityLayer))communityLayer.addTo(map);
+  }else if(districtMode){
+    if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
+    if(communityLayer&&map.hasLayer(communityLayer))map.removeLayer(communityLayer);
+    schoolDistrictLayer.clearLayers();
+    schoolDistrictLayer.addData({type:'FeatureCollection',features:schoolDistricts.map(d=>d.feature)});
+    if(!map.hasLayer(schoolDistrictLayer))schoolDistrictLayer.addTo(map);
   }else{
     if(communityLayer&&map.hasLayer(communityLayer))map.removeLayer(communityLayer);
+    if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
     if(!map.hasLayer(geoLayer))geoLayer.addTo(map);
   }
-  ui['feature-count'].textContent=(boardMode?visibleBoards.length:visible.length).toLocaleString();
-  ui['feature-label'].textContent=boardMode?'community boards in selected borough filter':'NTAs in selected borough filter';
-  ui.neighborhood.disabled=boardMode;
-  ui['search-button'].disabled=boardMode;
-  ui.neighborhood.placeholder=boardMode?'Switch to Neighborhoods to search an NTA':'Search e.g. Harlem, Astoria, BX0101';
-  ui['nta-options'].replaceChildren();
-  for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){
-    const option=document.createElement('option');option.value=r.name+' ('+r.code+')';ui['nta-options'].append(option);
-  }
-  if(borough==='all'){
+  if(schoolMode&&schoolMarkers&&!map.hasLayer(schoolMarkers))schoolMarkers.addTo(map);
+  if(!schoolMode&&schoolMarkers&&map.hasLayer(schoolMarkers))map.removeLayer(schoolMarkers);
+
+  const total=boardMode?visibleBoards.length:districtMode?schoolDistricts.length:
+    schoolMode?visibleSchools.length:visible.length;
+  ui['feature-count'].textContent=total.toLocaleString();
+  ui['feature-label'].textContent=boardMode?'community boards in selected borough filter':
+    districtMode?'geographic NYC school districts (citywide)':
+    schoolMode?'K–12 school location records matching selected filters':
+    'NTAs in selected borough filter';
+
+  if(borough==='all'&&!schoolMode&&!districtMode){
     if(!map.hasLayer(boroughLabels))boroughLabels.addTo(map);
   }else if(map.hasLayer(boroughLabels))map.removeLayer(boroughLabels);
   landmarkLayer.clearLayers();
-  for(const landmark of LANDMARKS){
-    if(borough!=='all' && borough!==landmark.borough)continue;
-    const icon=L.divIcon({
-      className:'comic-landmark',
-      html:'<span class="comic-landmark-inner" aria-hidden="true">'+landmark.symbol+'</span>',
-      iconSize:[42,42],
-      iconAnchor:[21,21]
-    });
-    const marker=L.marker(landmark.coords,{
-      icon,keyboard:true,title:landmark.name+', '+landmark.borough,
-      alt:landmark.name
-    }).addTo(landmarkLayer);
-    marker.bindTooltip(landmark.name+' · '+landmark.borough,{direction:'top',offset:[0,-21],className:'comic-tooltip'});
-    marker.on('click',()=>{
-      if(ui.borough.value==='all')switchBorough(landmark.borough);
-      status(landmark.name+' is in '+landmark.borough+'. Select a neighborhood to explore NTA details.');
-    });
+  if(!schoolMode){
+    for(const landmark of LANDMARKS){
+      if(borough!=='all'&&borough!==landmark.borough)continue;
+      const icon=L.divIcon({
+        className:'comic-landmark',
+        html:'<span class="comic-landmark-inner" aria-hidden="true">'+landmark.symbol+'</span>',
+        iconSize:[42,42],iconAnchor:[21,21]
+      });
+      const marker=L.marker(landmark.coords,{icon,keyboard:true,
+        title:landmark.name+', '+landmark.borough,alt:landmark.name}).addTo(landmarkLayer);
+      marker.bindTooltip(landmark.name+' · '+landmark.borough,
+        {direction:'top',offset:[0,-21],className:'comic-tooltip'});
+      marker.on('click',()=>{
+        if(ui.borough.value==='all')switchBorough(landmark.borough);
+        status(landmark.name+' is in '+landmark.borough+'. Explore the selected geography layer.');
+      });
+    }
   }
   for(const button of document.querySelectorAll('[data-borough]')){
     const active=button.dataset.borough===borough;
@@ -479,15 +527,27 @@ function render(){
   }
   if(selected&&!visible.includes(selected))selected=null;
   if(selectedCommunity&&!visibleBoards.includes(selectedCommunity))selectedCommunity=null;
+  if(selectedSchool&&!visibleSchools.includes(selectedSchool))selectedSchool=null;
+
   if(boardMode){
     selectedCommunity?boardProfile(selectedCommunity):boardOverview(borough);
     if(visibleBoards.length){
-      const target=selectedCommunity
-        ? communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===selectedCommunity.code)
-        : null;
+      const target=selectedCommunity?
+        communityLayer.getLayers().find(x=>parseBoroCd(x.feature)?.code===selectedCommunity.code):null;
       if(target)focusCommunityBoard(target.getBounds());
       else fitNYCBounds(communityLayer.getBounds(),{padding:[35,35],animate:false});
     }
+  }else if(districtMode){
+    selectedSchoolDistrict?schoolDistrictProfile(selectedSchoolDistrict):schoolDistrictOverview();
+    const target=selectedSchoolDistrict?
+      schoolDistrictLayer.getLayers().find(x=>Number(x.feature.properties.district)===selectedSchoolDistrict.code):null;
+    if(target)fitNYCBounds(target.getBounds(),{padding:[35,35],maxZoom:13,animate:false});
+    else if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35],animate:false});
+  }else if(schoolMode){
+    selectedSchool?schoolProfile(selectedSchool):schoolOverview();
+    if(selectedSchool)map.setView(selectedSchool.coordinates,15,{animate:false});
+    else if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35],animate:false});
+    refreshSchoolPins();
   }else{
     if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
     if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
