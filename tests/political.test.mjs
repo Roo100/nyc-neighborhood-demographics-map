@@ -16,7 +16,7 @@ test('NYC BOE official February 20 2026 PDF covers all 51 Council districts with
   assert.equal(raw.raw_district_county_sections,55);
   assert.equal(enrolled.size,51);
   assert.deepEqual([...enrolled.keys()].sort((a,b)=>a-b),Array.from({length:51},(_,i)=>i+1));
-  assert.deepEqual(Object.keys(raw.cross_borough_districts).sort(),['8','22','34','50']);
+  assert.deepEqual(Object.keys(raw.cross_borough_districts).sort(),['22','34','50','8']);
   assert.equal(ENROLLMENT_FILE,'data/political/council_enrollment_2026.json');
 });
 test('party registration sums reconcile to every district and the published BOE citywide report',()=>{
