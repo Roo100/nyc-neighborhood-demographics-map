@@ -117,6 +117,24 @@ async function checkViewport(label, viewport) {
     assert.ok(legendRect.y>=mapRect.y+mapRect.height-1,
       'Mobile legend must be below, not over, map polygons');
   }
+  // Census ACS controls use pinned official 2024 five-year tract tables with
+  // explicit missingness. Keep default borough colors until user selects data.
+  await page.waitForFunction(()=>document.getElementById('demographic-layer')&&!document.getElementById('demographic-layer').disabled,null,{timeout:40000});
+  assert.equal(await page.locator('#demographic-layer').inputValue(),'borough');
+  assert.ok((await page.locator('#acs-source').textContent()).includes('2020–2024 ACS five-year'));
+  await page.locator('#demographic-layer').selectOption('income');
+  await page.waitForFunction(()=>document.querySelectorAll('.acs-legend-item').length===6);
+  assert.ok((await page.locator('.map-key').textContent()).includes('Approx. median household income'));
+  assert.ok((await page.locator('.map-key').textContent()).includes('No reliable data'));
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-acs-income.png',fullPage:true});
+  await page.locator('#demographic-layer').selectOption('poverty');
+  assert.ok((await page.locator('.map-key').textContent()).includes('Poverty rate'));
+  await page.locator('#demographic-layer').selectOption('race_black');
+  assert.ok((await page.locator('.map-key').textContent()).includes('Black non-Hispanic population share'));
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-acs-race.png',fullPage:true});
+  await page.locator('#demographic-layer').selectOption('borough');
+  assert.ok((await page.locator('.map-key').textContent()).includes('Color your NYC'));
+  assert.equal(await page.locator('.acs-legend-item').count(),0);
   const measured = await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(measured.width <= measured.viewport+2,
     'Unexpected horizontal scrolling: '+JSON.stringify(measured));
@@ -130,6 +148,10 @@ async function checkViewport(label, viewport) {
   await page.locator('#search-button').click();
   await page.locator('#detail-name').filter({hasText:'Longwood'}).waitFor();
   assert.ok(!(await page.locator('#detail-meta').textContent()).includes('BX0202'),'NTA identifiers should not be visible in neighborhood profiles');
+  assert.equal(await page.locator('#acs-profile').isVisible(),true);
+  assert.ok((await page.locator('#acs-profile-content').textContent()).includes('Approx. household median income'));
+  assert.ok((await page.locator('#acs-profile-content').textContent()).includes('Poverty rate'));
+  assert.ok((await page.locator('#acs-profile-note').textContent()).includes('not a published ACS median'));
   assert.equal(await page.locator('#neighborhood').getAttribute('placeholder'),'Search e.g. Harlem, Astoria, Longwood');
   await page.waitForFunction(()=>document.querySelector('#civic-source')?.textContent.includes('59 boards'));
   // Search centers the Longwood NTA. Click its map polygon, not a menu or the
@@ -146,6 +168,9 @@ async function checkViewport(label, viewport) {
   const firstPopup=await page.locator('.nyc-pop-info-card:visible').last().textContent();
   assert.ok(firstPopup.includes('Community board'));
   assert.ok(firstPopup.includes('School district'));
+  assert.ok(firstPopup.includes('Neighborhood demographics'));
+  assert.ok(firstPopup.includes('2020–2024'));
+  assert.ok(!(firstPopup.includes('BX0202')),'No internal NTA identifier in Census popup');
   assert.ok(firstPopup.includes('Borough president'));
   assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
   const popupWidth=await page.locator(popupSelector+' .nyc-pop-info-card').last()
@@ -275,7 +300,7 @@ async function checkViewport(label, viewport) {
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
-    mapGridBoardLookup:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    mapGridBoardLookup:true,acs2024LayersVerified:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
     exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }
