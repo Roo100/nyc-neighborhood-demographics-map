@@ -23,9 +23,16 @@ async function checkViewport(label, viewport) {
   assert.equal(await page.locator('.leaflet-container').count(),1);
   assert.equal(await page.locator('.leaflet-tile').count(),0,'No tiles or surrounding municipalities');
   assert.equal(await page.locator('#map canvas').count()>0,true,'NTA polygons rendered on canvas');
+  if(label==='mobile'){
+    const mapRect=await page.locator('#map').boundingBox();
+    const legendRect=await page.locator('.map-key').boundingBox();
+    assert.ok(legendRect.y>=mapRect.y+mapRect.height-1,
+      'Mobile legend must be below, not over, map polygons');
+  }
   const measured = await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(measured.width <= measured.viewport+2,
     'Unexpected horizontal scrolling: '+JSON.stringify(measured));
+  await page.waitForTimeout(500); // Wait for Leaflet zoom animation to settle before captures.
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-overview.png',fullPage:true});
   await page.locator('[data-borough="Bronx"]').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='50');
@@ -35,6 +42,7 @@ async function checkViewport(label, viewport) {
   await page.locator('#search-button').click();
   await page.locator('#detail-name').filter({hasText:'Longwood'}).waitFor();
   assert.equal(await page.locator('#detail-meta').textContent().then(text=>text.includes('BX0202')),true);
+  await page.waitForTimeout(600);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='82');
