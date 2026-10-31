@@ -588,3 +588,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .party-profile{padding:12px}
   .party-popup-details[open] dl{max-height:130px}
 }
+
+
+.council-picker-field select{background:#fff0d3;border:2px solid #241039;font-weight:900}
+@media(max-width:600px){.council-picker-field{width:100%}}
