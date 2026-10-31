@@ -739,3 +739,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
  .support-panels{padding:12px;gap:12px}
  .support-panels .point-board-panel{padding:12px}
 }
+
+/* Latest completed primary-election panel, not an unpublished general election. */
+.recent-election-other{margin-top:16px;padding:14px 16px;border:2px solid #241039;border-radius:9px;background:#f3efff}
+.recent-election-other strong{display:block;font-size:15px}
+.recent-election-other p{margin:7px 0 12px;font-size:13px}
+.recent-election-other a{display:inline-block;margin:0 14px 7px 0;font-weight:800;color:#5420a3;text-decoration:underline;text-underline-offset:2px}
+#primary-2026-results{max-width:100%;overflow-x:auto}
+@media(max-width:600px){.recent-election-other{padding:12px}.recent-election-other a{display:block;margin:8px 0}}
