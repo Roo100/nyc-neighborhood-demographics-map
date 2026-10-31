@@ -244,3 +244,35 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .map-key .key-title,.map-key .key-note{grid-column:1/-1}
   .map-key .key-note{margin-top:4px;padding-top:6px}
 }
+
+
+/* Street-grid mode — real streets remain legible underneath translucent comic colors.
+   Tiles are visually cropped to official NYC land polygons by the interactive mask. */
+.map-view-field{min-width:155px}
+.map-view-field select{background:#e5fdfe;border:2px solid var(--ink);font-weight:900}
+.leaflet-tile-pane{filter:saturate(.78) contrast(1.10)}
+.leaflet-pane.leaflet-cityMaskPane-pane{pointer-events:none}
+.leaflet-control-attribution{
+  background:#fffffff2!important;color:#241039!important;
+  font-size:10px!important;border:1px solid #241039;border-radius:4px;
+  max-width:80%;white-space:normal;text-align:right;
+}
+.leaflet-control-attribution a{color:#55208b!important}
+.street-map-note{
+  position:absolute;z-index:450;left:12px;bottom:25px;right:12px;
+  width:max-content;max-width:calc(100% - 24px);
+  padding:5px 9px;border:2px solid var(--ink);border-radius:7px;
+  background:#fffffff2;box-shadow:2px 3px 0 #241039;
+  color:#241039;font-size:10px;line-height:1.3;font-weight:800;
+  pointer-events:none;
+}
+@media(min-width:601px){
+ .street-map-note{left:auto;right:13px;bottom:30px;max-width:60%}
+}
+@media(max-width:600px){
+ .map-view-field{width:100%}
+ .street-map-note{position:static;max-width:none;width:100%;margin:0;
+   border:0;border-top:2px solid var(--ink);border-radius:0;
+   background:#f3efff;box-shadow:none;padding:7px 11px;font-size:10px}
+ .leaflet-control-attribution{font-size:9px!important;max-width:100%}
+}
