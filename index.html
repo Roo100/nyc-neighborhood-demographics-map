@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=political-legislative-review-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=mayor-citywide-2025-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=political-legislative-review-1"></script>
+  <script type="module" src="assets/js/app.js?v=mayor-citywide-2025-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -128,6 +128,19 @@
           <p class="civic-date-note" id="acs-source" aria-live="polite">Income, poverty and race/ethnicity are derived from official 2020–2024 ACS five-year census-tract tables and NYC Planning's 2020 NTA crosswalk. Missing or unreliable values are not estimated.</p>
           <p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
         </section>
+        <details class="mayor-election-2025" id="mayor-election-2025">
+          <summary><span class="mayor-election-kicker">CERTIFIED ELECTION RESULTS · NOVEMBER 2025</span>
+            <strong>NYC Mayor — Citywide Results</strong>
+            <span class="mayor-election-hint">Separate from 2026 party registration and neighborhood demographics. Expand to compare certified candidate votes.</span>
+          </summary>
+          <div class="mayor-election-inner">
+            <p id="mayor-election-status" role="status">Checking certified November 4, 2025 Board of Elections results…</p>
+            <p class="mayor-election-citywide"><strong>Citywide results only.</strong> These are votes counted in the 2025 mayoral election, not party enrollment, a neighborhood vote share, or a 2026 election outcome.</p>
+            <div class="mayor-election-totals" id="mayor-election-totals"></div>
+            <div id="mayor-election-candidates" aria-label="Certified 2025 NYC mayoral election candidate vote totals"></div>
+            <p class="mayor-election-source"><a href="https://www.vote.nyc/page/election-results-summary-2025" target="_blank" rel="noopener noreferrer">NYC Board of Elections — November 4, 2025 certified results</a>. Ballot lines for the same candidate are combined; percentages use votes recorded for candidates and write-ins, excluding unrecorded ballots.</p>
+          </div>
+        </details>
       </section>
       <section class="below"><div><strong id="feature-count">—</strong><span id="feature-label">NTAs in selected borough filter</span></div><p>2020 NTA boundaries are statistical reporting areas, not definitive neighborhood definitions. Parks, airports, cemeteries and other special-purpose areas are identified in borough detail view. Sources: NYC Department of City Planning <a href="https://data.cityofnewyork.us/d/9nt8-h7nd">2020 NTAs</a> and <a href="https://data.cityofnewyork.us/d/5crt-au7u">2026 community districts</a>. Districts are different geographies; do not infer electoral representation from NTA alone.</p></section>
     </main>
