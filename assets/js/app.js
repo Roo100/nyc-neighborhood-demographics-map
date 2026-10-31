@@ -1,6 +1,7 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict,lookupPolygonAtPoint} from './civic.js';
 import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
+import {DISTRICT_KINDS,OFFICIAL_LEGISLATIVE_DIRS,validateDistrictGeoJSON,validateOfficialNames,makeDistrictLookup,identifyLegislators,officialForDistrict} from './representation.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -33,7 +34,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   schoolPoints=[],schoolById=new Map(),schoolMarkers=null,
   selectedSchool=null,selectedSchoolDistrict=null,
   communitySpatialIndex=null,schoolDistrictSpatialIndex=null,
-  selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null;
+  selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null,
+  legislativeLookup={},legislativeOfficials=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -236,13 +238,41 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   const borough=neighborhood?.borough||boardBorough;
   if(borough&&BOROUGH_PRESIDENTS[borough])
     row('Borough president',BOROUGH_PRESIDENTS[borough]);
+
+  // Legislative boundaries are independent 2026 polygons; a neighborhood
+  // can cross several districts. Never map officials by NTA or ZIP code.
+  const legislative=identifyLegislators(legislativeLookup,latlng.lat,latlng.lng);
+  const officialName=(key,match)=>match.status==='match'
+    ?officialForDistrict(legislativeOfficials,key,match.record.code):null;
+  for(const key of ['council','senate','assembly','congress']){
+    const matched=legislative[key],config=DISTRICT_KINDS[key];
+    const label={
+      council:'City Council representative',senate:'NY State Senator',
+      assembly:'NY State Assembly',congress:'US House district'
+    }[key];
+    if(matched.status==='match'){
+      const name=officialName(key,matched);
+      row(label, (name?name+' · ':'')+'District '+matched.record.code+
+        (key==='senate'&&!name?' · see current Senate directory':''));
+    }else if(matched.status==='boundary'){
+      row(label,'District boundary — verify address');
+    }else if(matched.status==='unavailable'){
+      row(label,'Verified district data loading or unavailable');
+    }else if(matched.status==='outside'){
+      row(label,'No NYC district polygon at this point');
+    }else{
+      row(label,'Location could not be matched');
+    }
+  }
   root.append(facts);
   const links=document.createElement('div');
   links.className='nyc-pop-info-links';
   for(const [label,url] of [
     ['Community board contacts','https://www.nyc.gov/site/communityboards/index.page'],
-    ['City Council district finder','https://council.nyc.gov/districts/'],
-    ['State legislators','https://elections.ny.gov/new-york-state-elected-officials'],
+    ['City Council directory',OFFICIAL_LEGISLATIVE_DIRS.council],
+    ['NY Senate directory',OFFICIAL_LEGISLATIVE_DIRS.senate],
+    ['NY Assembly directory',OFFICIAL_LEGISLATIVE_DIRS.assembly],
+    ['US House directory',OFFICIAL_LEGISLATIVE_DIRS.congress],
     ['Browse K–12 schools','https://www.myschools.nyc/en/']
   ]){
     const a=document.createElement('a');
@@ -252,7 +282,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   root.append(links);
   const disclaimer=document.createElement('p');
   disclaimer.className='nyc-pop-info-disclaimer';
-  disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
+  disclaimer.textContent='All districts describe the selected map point, not the entire neighborhood. School districts are not attendance zones. Officeholders are checked against official directories as of October 31, 2026; verify current officeholder before contacting.';
   root.append(disclaimer);
   // One card at a time. The phone version stays entirely *inside* the map
   // instead of allowing Leaflet's anchored popup to clip above its top edge.
@@ -537,6 +567,29 @@ function findSchool(){
   }
   selectSchool(candidates[0]);
 }
+async function loadLegislativeDistricts(){
+  try{
+    const manifest=await download('data/legislative/validation-2026.json');
+    const official=validateOfficialNames(await download('data/legislative/officials-verified-2026-10-31.json'));
+    const kinds=Object.keys(DISTRICT_KINDS);
+    // Build independent polygon indexes. Do not expose an incomplete source as
+    // a verified representative and do not fabricate membership from NTA.
+    const layers=await Promise.all(kinds.map(async key=>{
+      const geojson=await download(DISTRICT_KINDS[key].file);
+      const records=validateDistrictGeoJSON(key,geojson,manifest);
+      return [key,{records,index:makeDistrictLookup(records)}];
+    }));
+    legislativeOfficials=official;
+    legislativeLookup=Object.fromEntries(layers);
+    document.getElementById('representation-source').textContent=
+      'Legislative boundaries: NYC DCP 2026 (26b). Council and Senate names checked in official directories on October 31, 2026; verify officeholder changes before contacting.';
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+  }catch(error){
+    console.warn('Legislative district source incomplete:',error);
+    document.getElementById('representation-source').textContent=
+      'Legislative district details are temporarily unavailable; use the official representative directory links.';
+  }
+}
 async function loadEducationGeography(){
   let districtsOK=false,schoolsOK=false;
   try{
@@ -794,6 +847,7 @@ async function init(){
     setMapDetail(ui['map-detail'].value);
     void loadCommunityGeography();
     void loadEducationGeography();
+    void loadLegislativeDistricts();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
