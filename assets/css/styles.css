@@ -300,3 +300,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .civic-date-note{font-size:.72rem!important;color:#554b6c!important}
 .community-layer-note{font-weight:800;color:#241039}
 @media(max-width:600px){.civic-panel{padding:15px 13px}.civic-links a{font-size:13px}}
+
+[hidden]{display:none!important}
+.community-board-field select{min-width:190px;background:#fff4c4;font-weight:800}
