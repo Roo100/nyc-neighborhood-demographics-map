@@ -116,6 +116,21 @@ async function checkViewport(label, viewport) {
   await page.locator('#community-board').selectOption('201');
   await page.locator('#detail-name').filter({hasText:'Bronx Community Board 1'}).waitFor();
   assert.ok((await page.locator('#detail-meta').textContent()).includes('201'));
+  // Selecting a geographic point must look up its board from the pinned 2026
+  // polygons without replacing the board/education/neighborhood profile.
+  await page.locator('#identify-board-center').click();
+  await page.waitForFunction(()=>['board','boundary','outside','joint_interest'].includes(
+    document.querySelector('#point-board-panel')?.dataset.lookupStatus),null,{timeout:15000});
+  assert.ok((await page.locator('#point-board-coordinates').textContent()).includes('Selected map point:'));
+  assert.ok(await page.locator('.grid-map-click-marker').count()===1);
+  // The point can also be selected by clicking the map grid directly.
+  const mapBoxForClick=await page.locator('#map').boundingBox();
+  await page.locator('#map').click({position:{x:Math.round(mapBoxForClick.width/2),y:Math.round(mapBoxForClick.height/2)}});
+  await page.waitForFunction(()=>['board','boundary','outside','joint_interest'].includes(
+    document.querySelector('#point-board-panel')?.dataset.lookupStatus));
+  assert.equal(await page.locator('.grid-map-click-marker').count(),1);
+  assert.ok((await page.locator('#point-board-result').textContent()).length>35);
+  assert.equal(await page.locator('#detail-name').textContent(),'Bronx Community Board 1');
   await page.waitForTimeout(500);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-community-board.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
@@ -178,7 +193,7 @@ async function checkViewport(label, viewport) {
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood/BX0202',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
-    schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    mapGridBoardLookup:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
     exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }
