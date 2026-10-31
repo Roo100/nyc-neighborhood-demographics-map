@@ -18,7 +18,7 @@ OUT=ROOT/"data/legislative"
 SOURCES={
     "council":{"id":"872g-cjhh","keys":["coundist","coun_dist","council_dist"],"min":51,"max":51,"min_id":1,"max_id":51},
     "senate":{"id":"afns-vxeu","keys":["stsendist","st_sen_dist","senate_dist","stsend_dist"],"min":20,"max":45,"min_id":1,"max_id":63},
-    "assembly":{"id":"5yfv-9hkp","keys":["assemdist","assem_dist","assembly_dist"],"min":50,"max":100,"min_id":1,"max_id":150},
+    "assembly":{"id":"5yfv-9hkp","keys":["assembly_district","assemdist","assem_dist","assembly_dist"],"min":50,"max":100,"min_id":1,"max_id":150},
     "congress":{"id":"j3u5-usz2","keys":["congdist","cong_dist","congress_dist"],"min":8,"max":20,"min_id":1,"max_id":26}
 }
 def get_bytes(url):
