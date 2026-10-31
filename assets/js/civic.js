@@ -28,7 +28,7 @@ export function parseBoroCd(feature){
   const borough=BOROUGH_ORDER[boro];
   if(!borough)return null;
   const board=numberInBorough>=1&&numberInBorough<=BOARD_COUNTS[borough];
-  const jointInterest=numberInBorough>=80&&numberInBorough<=99;
+  const jointInterest=numberInBorough>BOARD_COUNTS[borough]&&numberInBorough<=99;
   if(!board&&!jointInterest)return null;
   return {code:number,borough,number:numberInBorough,
     type:board?'board':'joint_interest',
