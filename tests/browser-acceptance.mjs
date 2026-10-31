@@ -35,7 +35,7 @@ async function checkViewport(label, viewport) {
   assert.equal(await page.locator('#map-detail').inputValue(),'streets');
   await page.locator('.leaflet-tile').first().waitFor({timeout:15000});
   assert.ok(await page.locator('.leaflet-tile').count()>0,'Street-grid tiles are present');
-  assert.ok(await page.locator('.leaflet-cityMaskPane-pane').count()===1,'City clipping pane is present');
+  assert.ok(await page.locator('.leaflet-cityMask-pane').count()===1,'City clipping pane is present');
   assert.ok(await page.locator('#map .leaflet-control-attribution').count()===1,'Street source attribution remains visible');
   await page.locator('#map-detail').selectOption('comic');
   await page.waitForFunction(()=>document.querySelectorAll('.leaflet-tile').length===0);
