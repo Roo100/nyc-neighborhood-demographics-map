@@ -52,3 +52,22 @@ Source: https://api.census.gov/data/2024/acs/acs5/groups/B03002.html
 ## Publication state
 
 **No actual income values, race/ethnicity values, or election results have been ingested into the website yet.** Their incorporation requires complete validated source data and the next user approval checkpoint.
+
+## Executable income preparation pipeline (added October 31, 2026)
+
+From the repository root, the scripts are:
+
+```bash
+# Download official 2020–2024 ACS five-year tract detailed tables.
+# If Census requires an API key, set CENSUS_API_KEY in your environment.
+python3 scripts/fetch_acs_income.py
+
+# Join by official 2020 tract GEOID, aggregate household and poverty counts,
+# and compute only clearly labeled derived income-bin median approximations.
+python3 scripts/build_income_nta.py
+
+# Run tests without downloading any real ACS records.
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+Outputs are staged under `data/acs/`; **the website does not currently load them**. The ACS download script never puts a Census API key in output files or source URLs. The builder reports 262 NTA records, flags missing/suppressed values as unavailable, and keeps records in *QA-only* status. No NTA median from grouped data may be labeled as an official Census B19013 median.
