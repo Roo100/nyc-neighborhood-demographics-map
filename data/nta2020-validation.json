@@ -1,0 +1,26 @@
+{
+  "status": "VALID",
+  "source_dataset_id": "9nt8-h7nd",
+  "geography": "2020 NTAs",
+  "features": 262,
+  "by_borough": {
+    "Bronx": 50,
+    "Brooklyn": 69,
+    "Manhattan": 38,
+    "Queens": 82,
+    "Staten Island": 23
+  },
+  "special_purpose_by_borough": {
+    "Bronx": 13,
+    "Brooklyn": 16,
+    "Manhattan": 6,
+    "Queens": 23,
+    "Staten Island": 7
+  },
+  "sha256": "4a036c53ce665a73954f260ef4f3a8c49f33d75fb2fc859fe0baf92f4b7f8af8",
+  "bytes": 4589305,
+  "geographic_exceptions": {
+    "BX0802": "Bronx",
+    "QN0151": "Bronx"
+  }
+}
