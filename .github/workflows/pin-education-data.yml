@@ -1,0 +1,46 @@
+name: Validate and pin official NYC school districts and NYSED K-12 school points
+on:
+  push:
+    branches: [feature/nyc-civic-community-boards]
+    paths:
+      - scripts/fetch_schools_k12.py
+      - .github/workflows/pin-education-data.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pin-education:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retrieve and validate official NYSED school points and DCP district polygons
+        run: python scripts/fetch_schools_k12.py
+      - name: Save approved-source geometry to research branch only
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = 'feature/nyc-civic-community-boards'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/schools/school-districts-2026.geojson data/schools/k12-schools-nysed.geojson data/schools/validation-2026.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin official school district and K-12 point datasets"
+            git fetch origin feature/nyc-civic-community-boards
+            git rebase origin/feature/nyc-civic-community-boards
+            git push origin HEAD:feature/nyc-civic-community-boards
+          fi
+      - name: Archive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyc-education-source-qa
+          path: data/schools/validation-2026.json
+          if-no-files-found: warn
+          retention-days: 14
