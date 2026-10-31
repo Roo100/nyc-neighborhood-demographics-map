@@ -1,0 +1,89 @@
+{
+  "status": "VERIFIED_OFFICIAL_2025_MAYOR_CITYWIDE_ONLY",
+  "election_date": "2025-11-04",
+  "certification_date": "2025-12-02",
+  "contest": "NYC Mayor — 2025 General Election (citywide)",
+  "official_ed_source": "https://www.vote.nyc/page/election-results-summary-2025",
+  "source_ed_csv_sha256": "a39b09ce5f83a026541a234e01ee024cd968edb26338cff1cc6a8196e96219ba",
+  "source_certified_recap_sha256": "7ce20521454792cc79c3ef84ddc276f9a254f7e4a03b8f59509291c62798545e",
+  "total_ballots": 2218647,
+  "total_candidate_and_write_in_votes": 2194204,
+  "unrecorded_ballots": 24443,
+  "candidates": [
+    {
+      "name": "Zohran Kwame Mamdani",
+      "votes": 1114184,
+      "vote_share_pct": 50.78
+    },
+    {
+      "name": "Andrew M. Cuomo",
+      "votes": 906614,
+      "vote_share_pct": 41.32
+    },
+    {
+      "name": "Curtis A. Sliwa",
+      "votes": 153749,
+      "vote_share_pct": 7.01
+    },
+    {
+      "name": "Eric L. Adams",
+      "votes": 6897,
+      "vote_share_pct": 0.31
+    },
+    {
+      "name": "Scattered write-in votes",
+      "votes": 6206,
+      "vote_share_pct": 0.28
+    },
+    {
+      "name": "Irene Estrada",
+      "votes": 2856,
+      "vote_share_pct": 0.13
+    },
+    {
+      "name": "Jim Walden",
+      "votes": 2319,
+      "vote_share_pct": 0.11
+    },
+    {
+      "name": "Joseph Hernandez",
+      "votes": 1379,
+      "vote_share_pct": 0.06
+    }
+  ],
+  "counties": [
+    {
+      "county": "New York",
+      "ballots": 562878,
+      "candidate_and_write_in_votes": 558058,
+      "unrecorded": 4820
+    },
+    {
+      "county": "Bronx",
+      "ballots": 241304,
+      "candidate_and_write_in_votes": 236523,
+      "unrecorded": 4781
+    },
+    {
+      "county": "Kings",
+      "ballots": 716069,
+      "candidate_and_write_in_votes": 707767,
+      "unrecorded": 8302
+    },
+    {
+      "county": "Queens",
+      "ballots": 544603,
+      "candidate_and_write_in_votes": 539211,
+      "unrecorded": 5392
+    },
+    {
+      "county": "Richmond",
+      "ballots": 153793,
+      "candidate_and_write_in_votes": 152645,
+      "unrecorded": 1148
+    }
+  ],
+  "geographic_resolution": "CITYWIDE_ONLY",
+  "notice": "Official mayoral votes, not party enrollment. No election-district/NTA allocation or turnout measure is asserted.",
+  "QA": "ED CSV candidate line counts and ballot units match official certified county recap exactly; fusion candidate lines combined by named candidate."
+}
