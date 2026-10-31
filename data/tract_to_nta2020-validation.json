@@ -1,0 +1,15 @@
+{
+  "status": "VALID",
+  "source_dataset_id": "hm78-6dwm",
+  "source_url": "https://data.cityofnewyork.us/resource/hm78-6dwm.json?$limit=5000",
+  "source_geography": "2020 Census tracts and 2020 NTAs",
+  "tracts_in_source": 2327,
+  "mapped_tracts": 2327,
+  "unassigned_tracts_count": 0,
+  "unassigned_tract_geoids": [],
+  "nta_codes_with_at_least_one_tract": 262,
+  "unmatched_nta_codes": [],
+  "csv_sha256": "4792da77a2c15de28bbfd3e0deeb54e2383c5d32ab91ece78e99a72678115543",
+  "raw_source_sha256": "69142972dcbca2637984a972966858668a786a7f5538e19de34be28c52a151b6",
+  "notes": "Tracts in water areas are omitted by source; not a guarantee of 100% coverage of ACS 2024 tract IDs."
+}
