@@ -365,3 +365,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .below div{white-space:normal;flex-wrap:wrap;max-width:100%}
 .below span{overflow-wrap:anywhere;min-width:0}
 .details dd,.details h2{overflow-wrap:anywhere}
+
+
+/* Keep the full-size civic map visually balanced against detailed K–12 profiles. */
+@media(min-width:901px){
+  #map{height:900px}
+}
