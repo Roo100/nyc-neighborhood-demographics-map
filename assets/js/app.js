@@ -233,7 +233,8 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   links.className='nyc-pop-info-links';
   for(const [label,url] of [
     ['Community board contacts','https://www.nyc.gov/site/communityboards/index.page'],
-    ['Find elected representatives','https://council.nyc.gov/districts/'],
+    ['City Council district finder','https://council.nyc.gov/districts/'],
+    ['State legislators','https://elections.ny.gov/new-york-state-elected-officials'],
     ['Browse K–12 schools','https://www.myschools.nyc/en/']
   ]){
     const a=document.createElement('a');
