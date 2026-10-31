@@ -51,12 +51,12 @@ function baseStyle(record){
   return {
     color:'#241039',weight:streets?1.5:1.3,opacity:1,
     fillColor:record.special?'#dee6ed':fill,
-    fillOpacity:streets?(record.special?.18:.20):.96
+    fillOpacity:streets?(record.special?.12:.12):.96
   };
 }
 function styleFor(record){
   if(selected===record) return {color:'#241039',weight:4,fillColor:'#FFFFFF',
-    fillOpacity:ui['map-detail'].value==='streets'?.30:1};
+    fillOpacity:ui['map-detail'].value==='streets'?.16:1};
   return baseStyle(record);
 }
 // Fill the viewport OUTSIDE the official NYC land polygons. A single custom
@@ -259,7 +259,6 @@ async function init(){
     initializeStreetMap(records.map(r=>r.feature));
     wire();render();
     setMapDetail(ui['map-detail'].value);
-    if(new URLSearchParams(window.location.search).has('qa'))window.__atlasQA={map,geoLayer,streetTiles,outsideCityMask};
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
