@@ -1197,7 +1197,7 @@ async function init(){
     void loadACSGeography();
     void loadLegislativeDistricts();
     void loadCouncilEnrollment();
-    void loadCertifiedMayorResults();
+    // Certified June 2026 primary results are rendered directly from the verified BOE recap.
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
