@@ -37,7 +37,7 @@ def normalize(raw):
         seen.add(code)
         if 1 <= district <= BORO_COUNTS[borough]:
             counts[borough] += 1
-        elif 80 <= district <= 99:
+        elif BORO_COUNTS[borough] < district <= 99:
             special += 1
         else:
             raise ValueError(f"Unexpected community board/JIA district code: {code}")
