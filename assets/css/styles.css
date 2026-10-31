@@ -276,3 +276,221 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
    background:#f3efff;box-shadow:none;padding:7px 11px;font-size:10px}
  .leaflet-control-attribution{font-size:9px!important;max-width:100%}
 }
+
+
+/* Community boards and citywide civic directory: same NYC POP visual language. */
+.civic-layer-field select{font-weight:900;background:#e8ffbc}
+.civic-panel{
+  margin:24px 0 20px;padding:18px 17px 16px;
+  border:3px solid #241039;border-radius:13px;
+  background:#f4edff;box-shadow:5px 5px 0 #241039;
+}
+.civic-panel h3{font-family:Impact,"Arial Black",system-ui,sans-serif;font-size:1.3rem;
+  letter-spacing:.01em;text-transform:uppercase;margin:0 0 10px;color:#241039}
+.civic-panel p{font-size:.9rem;line-height:1.5;margin:8px 0}
+.civic-panel strong{color:#241039}
+.civic-panel .borough-president-line{padding:9px 11px;background:#c7ff00;
+  border:2px solid #241039;border-radius:8px}
+.civic-links{display:grid;grid-template-columns:1fr;gap:7px;margin-top:13px}
+.civic-links a{display:block;padding:9px 10px;color:#241039;text-decoration:underline;
+  text-decoration-thickness:1.5px;text-underline-offset:3px;
+  background:#fff;border:2px solid #241039;border-radius:8px;
+  font-size:.85rem;font-weight:800}
+.civic-links a:hover{background:#00d9ff}
+.civic-date-note{font-size:.72rem!important;color:#554b6c!important}
+.community-layer-note{font-weight:800;color:#241039}
+@media(max-width:600px){.civic-panel{padding:15px 13px}.civic-links a{font-size:13px}}
+
+[hidden]{display:none!important}
+.community-board-field select{min-width:190px;background:#fff4c4;font-weight:800}
+
+
+/* Full-width civic section under the two-column map and district profile. */
+.civic-panel{
+  grid-column:1/-1; margin:0; padding:22px 25px;
+  background:#f4edff; border:0;border-top:4px solid #241039;
+  border-radius:0;box-shadow:none;
+}
+.civic-panel h3{font-size:1.5rem}
+.civic-panel .borough-president-line{
+  display:inline-block;max-width:100%;margin:8px 0;padding:8px 14px
+}
+.civic-panel .civic-links{
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0
+}
+.civic-panel .civic-links a{
+  display:flex;align-items:center;min-height:58px;padding:12px 13px;
+  font-size:14px;text-decoration:none;box-shadow:2px 3px 0 #241039
+}
+.civic-panel .civic-links a:hover{text-decoration:underline}
+.civic-panel .civic-date-note{font-size:12px!important;max-width:1050px}
+.geography-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.geography-links a{font-size:12px}
+@media(max-width:900px){
+  .civic-panel .civic-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .civic-panel{padding:17px 14px}
+  .civic-panel .civic-links{grid-template-columns:1fr;gap:7px}
+  .civic-panel .civic-links a{min-height:42px;font-size:13px;padding:9px 11px}
+}
+
+
+/* Education geography and K–12 school browsing — distinct from admissions zoning. */
+.education-picker-field select{background:#eaffc6;font-weight:800}
+.school-filter-field select{background:#fff0fa;font-weight:800}
+.school-search-field{
+  display:flex;flex-flow:row wrap;align-items:end;
+  min-width:min(390px,100%);gap:7px;
+}
+.school-search-field label{flex-basis:100%}
+.school-search-field input{flex:1;min-width:190px}
+.school-search-field button{
+  color:#241039;background:#00D9FF;font-size:.86rem;box-shadow:2px 3px 0 #241039
+}
+@media(max-width:600px){
+  .education-picker-field,.school-filter-field,.school-search-field{width:100%;min-width:0}
+  .school-search-field input{min-width:130px}
+  .school-search-field button{font-size:12px;padding:9px 10px}
+}
+
+
+.school-pins-count{
+  margin:15px 0 0;padding:10px 12px;border:2px solid #241039;
+  background:#dcfaff;color:#241039;font-size:13px;font-weight:800;border-radius:8px;
+}
+
+
+/* Long map-layer descriptions must wrap rather than widen narrow phones. */
+.below div{white-space:normal;flex-wrap:wrap;max-width:100%}
+.below span{overflow-wrap:anywhere;min-width:0}
+.details dd,.details h2{overflow-wrap:anywhere}
+
+
+/* Keep the full-size civic map visually balanced against detailed K–12 profiles. */
+@media(min-width:901px){
+  #map{height:900px}
+}
+
+
+/* A street-grid selection resolves to an official 2026 board polygon, not an NTA. */
+.point-board-panel{
+  border:3px solid #241039;background:#e7faff;border-radius:12px;
+  padding:15px 14px;margin:20px 0;box-shadow:4px 4px 0 #241039;
+}
+.point-board-panel h3{font-size:1rem;font-weight:900;letter-spacing:.015em;margin:0 0 9px;color:#241039}
+.point-board-panel p{font-size:.88rem;line-height:1.5;margin:8px 0;color:#241039}
+.point-board-panel[data-lookup-status="board"]{background:#eaffc6}
+.point-board-panel[data-lookup-status="joint_interest"],
+.point-board-panel[data-lookup-status="boundary"]{background:#fff0cb}
+.point-board-panel[data-lookup-status="outside"],
+.point-board-panel[data-lookup-status="unavailable"]{background:#f3efff}
+.point-board-panel .point-board-coordinates{font:700 .72rem/1.4 ui-monospace,monospace;color:#47355e;overflow-wrap:anywhere}
+.point-board-center{
+  border:2px solid #241039!important;border-radius:8px!important;
+  color:#241039!important;background:#C7FF00!important;
+  padding:8px 10px!important;min-height:39px;
+  font-size:.81rem;font-weight:900;box-shadow:2px 3px 0 #241039;
+  margin:4px 0 11px;
+}
+.point-board-directory{display:block;font-size:.82rem;font-weight:800;
+  color:#4c188b;text-decoration:underline;text-underline-offset:3px}
+.grid-map-click-marker{background:transparent;border:0}
+.grid-map-click-marker-symbol{
+  display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
+  border:3px solid #241039;background:#C7FF00;color:#241039;
+  box-shadow:3px 3px 0 #FF3B9D;font-size:18px;font-weight:900;
+  pointer-events:none;
+}
+@media(max-width:600px){
+  .point-board-panel{padding:13px 12px}
+  .point-board-center{font-size:.76rem;width:100%}
+}
+
+
+/* Comic-book neighborhood popup, anchored to the selected street-grid location. */
+.nyc-pop-info-popup .leaflet-popup-content-wrapper{
+  padding:0!important;border:3px solid #241039!important;
+  border-radius:15px!important;background:#fff!important;
+  box-shadow:6px 7px 0 #241039!important;
+}
+.nyc-pop-info-popup .leaflet-popup-content{
+  margin:0!important;
+  width:min(340px,calc(100vw - 76px))!important;
+  max-width:calc(100vw - 76px)!important;
+  min-width:0!important;
+}
+.nyc-pop-info-popup .leaflet-popup-tip{background:#fff!important;border:2px solid #241039}
+.nyc-pop-info-popup .leaflet-popup-close-button{
+  z-index:1;top:10px!important;right:10px!important;
+  width:30px!important;height:30px!important;line-height:27px!important;
+  border-radius:50%;border:2px solid #241039;
+  background:#fff!important;color:#241039!important;
+  font-size:22px!important;font-weight:900;
+}
+.nyc-pop-info-card{font-family:system-ui,sans-serif;color:#241039;padding:16px 15px 14px}
+.nyc-pop-info-eyebrow{
+  display:inline-block;padding:4px 7px;margin:0 30px 6px 0;
+  background:#C7FF00;border:1.5px solid #241039;border-radius:5px;
+  color:#241039;font-weight:900;font-size:10px;letter-spacing:.04em;
+}
+.nyc-pop-info-title{
+  color:#241039!important;font-family:Impact,"Arial Black",system-ui,sans-serif;
+  font-size:clamp(22px,5vw,29px);line-height:1.12;
+  margin:4px 0!important;text-transform:uppercase;
+}
+.nyc-pop-info-subtitle{font-weight:800;font-size:13px;margin:0 0 12px!important}
+.nyc-pop-info-facts{display:grid;grid-template-columns:110px minmax(0,1fr);
+  gap:9px 12px;margin:12px 0;padding:12px 0;
+  border-top:2px solid #241039;border-bottom:2px solid #241039}
+.nyc-pop-info-facts dt{
+  text-align:left;font-size:12px;line-height:1.35;font-weight:800;color:#564a68;
+}
+.nyc-pop-info-facts dd{
+  min-width:0;margin:0;text-align:left;font-size:13px;line-height:1.35;
+  font-weight:900;color:#241039;overflow-wrap:anywhere;
+}
+.nyc-pop-info-links{display:flex;flex-wrap:wrap;gap:6px}
+.nyc-pop-info-links a{
+  display:inline-block;color:#241039!important;border:2px solid #241039;
+  background:#00D9FF;border-radius:7px;padding:7px 9px;
+  font-size:11px;font-weight:800;text-decoration:none!important;
+}
+.nyc-pop-info-links a:hover{background:#C7FF00;text-decoration:underline!important}
+.nyc-pop-info-disclaimer{
+  font-size:10px!important;line-height:1.35!important;
+  color:#574c68!important;margin:11px 0 0!important;
+}
+@media(max-width:600px){
+  .nyc-pop-info-popup .leaflet-popup-content-wrapper{max-width:calc(100vw - 40px)}
+  .nyc-pop-info-card{padding:12px}
+  .nyc-pop-info-title{font-size:23px}
+  .nyc-pop-info-facts{grid-template-columns:90px minmax(0,1fr);gap:8px}
+  .nyc-pop-info-facts dt,.nyc-pop-info-facts dd{font-size:11px}
+  .nyc-pop-info-links a{font-size:10px;padding:6px 8px}
+}
+
+
+/* Phone popup is contained within the map rather than clipping above the viewport. */
+.nyc-pop-mobile-overlay{
+  position:absolute;z-index:1300;left:57px;right:9px;top:10px;
+  max-height:calc(100% - 20px);overflow-y:auto;overscroll-behavior:contain;
+  background:#fff;border:3px solid #241039;border-radius:12px;
+  box-shadow:5px 5px 0 #241039;
+}
+.nyc-pop-mobile-overlay .nyc-pop-info-card{padding:13px 11px}
+.nyc-pop-mobile-close{
+  position:sticky;float:right;top:5px;right:6px;z-index:2;
+  width:28px!important;height:28px!important;min-height:28px!important;
+  padding:0!important;margin:5px 5px 0 0;
+  background:#C7FF00!important;color:#241039!important;border:2px solid #241039!important;
+  border-radius:50%!important;line-height:1;font-size:18px;font-weight:900;
+}
+.nyc-pop-mobile-overlay .nyc-pop-info-title{font-size:22px;line-height:1.05}
+.nyc-pop-mobile-overlay .nyc-pop-info-eyebrow{font-size:9px;margin:0 22px 7px 0}
+.nyc-pop-mobile-overlay .nyc-pop-info-facts{grid-template-columns:92px minmax(0,1fr);margin:8px 0}
+.nyc-pop-mobile-overlay .nyc-pop-info-links a{font-size:10px}
+@media(max-width:340px){
+ .nyc-pop-mobile-overlay{left:49px;right:6px}
+ .nyc-pop-mobile-overlay .nyc-pop-info-facts{grid-template-columns:76px minmax(0,1fr)}
+}

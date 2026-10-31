@@ -1,0 +1,18 @@
+{
+  "dataset": "NYC DCP 2026 26b Community Districts",
+  "source": "https://data.cityofnewyork.us/resource/5crt-au7u.geojson?$limit=1000",
+  "source_page": "https://data.cityofnewyork.us/d/5crt-au7u",
+  "downloaded_at_utc": "2026-10-31T17:38:40.775202+00:00",
+  "source_sha256": "4bd95ec20da3dcaba4a92b396c4da49508dc92ef680f1d945a80ee32f16452c4",
+  "pinned_sha256": "d5de3fc6ed26c6595db225d017f47b5ce23d433d57bdda21f6a4001f324dfc79",
+  "community_board_count": 59,
+  "joint_interest_area_count": 12,
+  "borough_board_counts": {
+    "1": 12,
+    "2": 12,
+    "3": 18,
+    "4": 14,
+    "5": 3
+  },
+  "rules": "Board IDs by BoroCD and validated 59+12 source counts. No inferred geographic crosswalk to 2020 NTAs."
+}
