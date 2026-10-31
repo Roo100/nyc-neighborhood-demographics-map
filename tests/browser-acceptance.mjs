@@ -121,7 +121,6 @@ async function checkViewport(label, viewport) {
   assert.equal(await page.locator('#detail-name').textContent(),heading,
     'Clicked neighborhood profile remains available beside the street-grid lookup');
   await page.waitForTimeout(600);
-  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='82');
   await page.locator('#reset').click();
