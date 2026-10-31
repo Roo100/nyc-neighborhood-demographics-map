@@ -6,6 +6,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/pin-nta-geography.yml'
+      - 'scripts/fetch_geography.py'
+      - 'scripts/fetch_crosswalk.py'
+      - 'scripts/validate_geography.py'
+      - 'tests/geography.test.mjs'
 
 permissions:
   contents: write
@@ -34,7 +38,7 @@ jobs:
       - name: Download and validate official 2020 Census tract to NTA crosswalk
         run: python scripts/fetch_crosswalk.py
       - name: Test NTA loading, borough filters, search and special-purpose handling
-        run: node --test tests/*.test.mjs
+        run: REQUIRE_PINNED_GEOJSON=1 node --test tests/*.test.mjs
       - name: Commit versioned validated snapshot only on change
         shell: bash
         run: |
