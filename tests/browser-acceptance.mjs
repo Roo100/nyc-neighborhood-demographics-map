@@ -147,6 +147,22 @@ async function checkViewport(label, viewport) {
   assert.ok(firstPopup.includes('Community board'));
   assert.ok(firstPopup.includes('School district'));
   assert.ok(firstPopup.includes('Borough president'));
+  // Additional authoritative 2026 DCP civic/electoral polygons load in the
+  // background; their matches must be at the exact clicked point.
+  await page.waitForFunction(()=>document.querySelector('#representation-source')?.textContent.includes('Legislative boundaries: NYC DCP 2026'),
+    null,{timeout:60000});
+  await page.waitForFunction(()=>{
+    const p=document.querySelector('.nyc-pop-info-card');
+    return p&&p.textContent.includes('City Council representative')&&
+      p.textContent.includes('NY State Senator')&&
+      p.textContent.includes('NY State Assembly')&&
+      p.textContent.includes('US House district')&&
+      !p.textContent.includes('Verified district data loading or unavailable');
+  },null,{timeout:30000});
+  const legislativeText=await page.locator('.nyc-pop-info-card:visible').last().textContent();
+  assert.ok(legislativeText.includes('District '),'Independent district codes should appear');
+  assert.ok(legislativeText.includes('City Council representative'));
+  assert.ok(!legislativeText.includes('BX0202'),'NTA identifiers remain absent in civic popup');
   assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
   const popupWidth=await page.locator(popupSelector+' .nyc-pop-info-card').last()
     .evaluate(element=>element.getBoundingClientRect().width);
@@ -275,7 +291,7 @@ async function checkViewport(label, viewport) {
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
-    mapGridBoardLookup:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    mapGridBoardLookup:true,legislativeDistrictsVerified:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
     exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }
