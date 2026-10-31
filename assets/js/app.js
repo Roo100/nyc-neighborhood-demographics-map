@@ -38,7 +38,11 @@ function status(message,error=false){ui.status.textContent=message;ui.status.cla
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
   // Default view includes recognizable street and block grids; mask outside NYC.
-  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,zoomSnap:0.1,zoomDelta:0.5,minZoom:9,maxZoom:17,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
+  map=L.map('map',{zoomControl:false,scrollWheelZoom:false,zoomSnap:0.1,zoomDelta:0.5,minZoom:9,maxZoom:17,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
+  // Keep +/- clear of the large upper-left comic legend.
+  L.control.zoom({position:'topright',zoomInTitle:'Zoom in',zoomOutTitle:'Zoom out'}).addTo(map);
+  // Show an actual distance scale independently from +/-; keep it below the legend.
+  L.control.scale({position:'bottomleft',metric:true,imperial:false,maxWidth:120}).addTo(map);
   const maskPane=map.createPane('cityMaskPane');
   maskPane.style.zIndex='350'; // Above street tiles (200), below neighborhood polygons (400).
   maskPane.style.pointerEvents='none';
