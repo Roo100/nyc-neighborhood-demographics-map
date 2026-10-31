@@ -259,7 +259,7 @@ async function init(){
     initializeStreetMap(records.map(r=>r.feature));
     wire();render();
     setMapDetail(ui['map-detail'].value);
-    if(new URLSearchParams(location.search).has('qa'))window.__atlasQA={map,geoLayer,streetTiles,outsideCityMask};
+    if(new URLSearchParams(window.location.search).has('qa'))window.__atlasQA={map,geoLayer,streetTiles,outsideCityMask};
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
