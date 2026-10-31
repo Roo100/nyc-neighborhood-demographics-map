@@ -40,7 +40,7 @@ test('comic atlas uses neon borough palette and exact named orientation markers'
   for(const hex of palette)assert.ok(js.includes(hex),'Missing borough fill '+hex);
   const landmarks=['Yankee Stadium','Coney Island Cyclone','Empire State Building','The Unisphere','St. George Ferry Terminal'];
   for(const name of landmarks)assert.ok(js.includes(name),'Missing named landmark '+name);
-  assert.equal((js.match(/coords:\\[/g)||[]).length,5);
+  assert.equal(js.split('coords:[').length-1,5);
   assert.ok(js.includes("marker.bindTooltip("));
   assert.ok(js.includes("landmarkLayer.clearLayers()"));
   assert.ok(html.includes('comic-style'));
