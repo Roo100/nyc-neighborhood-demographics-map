@@ -59,28 +59,59 @@ function styleFor(record){
     fillOpacity:ui['map-detail'].value==='streets'?.30:1};
   return baseStyle(record);
 }
-// Create an outside-NYC matte from the SAME pinned DCP 2020 polygons, not an
-// approximated borough bounding rectangle. Even-odd cutouts leave city streets
-// visible on the land polygons and hide neighboring municipalities.
-function cityMaskRings(features){
-  const rings=[[[39,-76],[39,-72],[43,-72],[43,-76]]];
-  for(const feature of features){
-    const geometry=feature.geometry;
-    const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
-    for(const polygon of polygons){
-      for(const ring of polygon){
-        rings.push(ring.map(point=>[point[1],point[0]]));
+// Fill the viewport OUTSIDE the official NYC land polygons. A single custom
+// canvas layer avoids Leaflet polygon clipping of a gigantic exterior ring;
+// the old approach accidentally hid roads inside NYC rather than outside.
+const CityMatte=L.Layer.extend({
+  initialize(features){this._features=features;},
+  onAdd(map){
+    this._map=map;
+    this._canvas=L.DomUtil.create('canvas','city-matte-canvas');
+    this._canvas.style.pointerEvents='none';
+    map.getPane('cityMaskPane').appendChild(this._canvas);
+    map.on('moveend zoomend resize',this._draw,this);
+    this._draw();
+  },
+  onRemove(map){
+    map.off('moveend zoomend resize',this._draw,this);
+    L.DomUtil.remove(this._canvas);
+  },
+  _draw(){
+    const map=this._map, canvas=this._canvas;
+    const size=map.getSize(),ratio=window.devicePixelRatio||1;
+    canvas.width=Math.round(size.x*ratio);
+    canvas.height=Math.round(size.y*ratio);
+    canvas.style.width=size.x+'px';canvas.style.height=size.y+'px';
+    L.DomUtil.setPosition(canvas,map.containerPointToLayerPoint([0,0]));
+    const ctx=canvas.getContext('2d');
+    if(!ctx)return;
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+    ctx.fillStyle='#e4faff';ctx.fillRect(0,0,size.x,size.y);
+    // Clear a transparent window through the matte for every NYC polygon.
+    // Each polygon's own rings are handled with even-odd fill to preserve holes.
+    ctx.globalCompositeOperation='destination-out';
+    ctx.fillStyle='#000';
+    for(const feature of this._features){
+      const g=feature.geometry;
+      const polygons=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+      for(const polygon of polygons){
+        ctx.beginPath();
+        for(const ring of polygon){
+          if(!ring.length)continue;
+          for(let i=0;i<ring.length;i++){
+            const xy=map.latLngToContainerPoint([ring[i][1],ring[i][0]]);
+            if(i===0)ctx.moveTo(xy.x,xy.y);else ctx.lineTo(xy.x,xy.y);
+          }
+          ctx.closePath();
+        }
+        ctx.fill('evenodd');
       }
     }
+    ctx.globalCompositeOperation='source-over';
   }
-  return rings;
-}
+});
 function initializeStreetMap(features){
-  outsideCityMask=L.polygon(cityMaskRings(features),{
-    pane:'cityMaskPane',renderer:L.canvas({pane:'cityMaskPane',padding:.1}),
-    stroke:false,fill:true,fillRule:'evenodd',fillColor:'#e4faff',fillOpacity:1,
-    interactive:false
-  });
+  outsideCityMask=new CityMatte(features);
   streetTiles=L.tileLayer(STREETS_URL,{
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     maxZoom:19,updateWhenIdle:true,keepBuffer:1
