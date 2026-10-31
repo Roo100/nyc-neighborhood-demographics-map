@@ -305,6 +305,31 @@ function resetMapPointLookup(){
   document.getElementById('point-board-panel').dataset.lookupStatus='idle';
 }
 
+function addCouncilEnrollmentToPopup(root,latlng,legislative){
+  if(!enrollmentReady||legislative.council?.status!=='match')return;
+  const record=councilEnrollment.get(legislative.council.record.code);
+  const details=enrollmentDetails(record,'active');
+  if(!details)return;
+  const section=document.createElement('details');
+  section.className='party-popup-details';
+  const summary=document.createElement('summary');
+  summary.textContent='Registered voters · Council District '+record.district+' (Feb 2026)';
+  const list=document.createElement('dl');
+  list.className='acs-popup-facts';
+  const row=(label,value)=>{
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=label;dd.textContent=value;list.append(dt,dd);
+  };
+  row('Active registered voters',details.total.toLocaleString('en-US'));
+  for(const p of details.parties){
+    row(p.name,p.count.toLocaleString('en-US')+' ('+(p.share??0).toFixed(1)+'% of active)');
+  }
+  row('Active + inactive voters',record.total.Total.toLocaleString('en-US'));
+  const note=document.createElement('p');
+  note.className='party-profile-note';
+  note.textContent='Source: NYC BOE 02/20/2026 Council District Summary. Registered voters, NOT candidate votes or neighborhood voting results. Districts can span multiple neighborhoods.';
+  section.append(summary,list,note);root.append(section);
+}
 function showCivicPopup(latlng,neighborhood,communityMatch){
   const root=document.createElement('div');
   root.className='nyc-pop-info-card';
@@ -314,7 +339,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   root.append(eyebrow);
   const title=document.createElement('h3');
   title.className='nyc-pop-info-title';
-  title.textContent=neighborhood?.name||'Selected NYC location';
+  title.textContent=neighborhood?.name||(ui['civic-layer'].value==='enrollment'&&selectedCouncil?'City Council District '+selectedCouncil.code:'Selected NYC location');
   root.append(title);
   if(neighborhood?.borough){
     const subtitle=document.createElement('p');
@@ -377,6 +402,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   }
   root.append(facts);
   if(neighborhood)addACSPopupInfo(root,neighborhood);
+  addCouncilEnrollmentToPopup(root,latlng,legislative);
   const links=document.createElement('div');
   links.className='nyc-pop-info-links';
   for(const [label,url] of [
