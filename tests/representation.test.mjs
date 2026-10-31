@@ -28,7 +28,7 @@ test('as-of official directory maps exactly 51 council seats; missing senate mem
 });
 test('clicked city block resolves independent polygon memberships, not NTA majority',()=>{
   const indices=Object.fromEntries(Object.entries(source).map(([k,rows])=>[k,{index:makeDistrictLookup(rows)}]));
-  const points=[[40.74844,-73.98566],[40.8307,-73.927],[40.7306,-73.794],[40.645,-74.072]];
+  const points=[[40.74844,-73.98566],[40.8307,-73.927],[40.7306,-73.794],[40.579,-74.145]];
   for(const [latitude,longitude] of points){
     const hit=identifyLegislators(indices,latitude,longitude);
     for(const type of Object.keys(DISTRICT_KINDS)){
