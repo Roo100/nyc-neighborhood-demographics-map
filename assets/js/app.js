@@ -2,7 +2,15 @@ import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 const NYC_BOUNDS = [[40.49,-74.27],[40.94,-73.68]];
-const BOROUGH_COLORS = {Bronx:'#8bc9bc',Brooklyn:'#edbc84',Manhattan:'#a8bee9',Queens:'#c6b2e2','Staten Island':'#e8a9af'};
+const BOROUGH_COLORS = {Bronx:'#C7FF00',Brooklyn:'#FF3B9D',Manhattan:'#00D9FF',Queens:'#AF68FF','Staten Island':'#FF9A24'};
+// Fixed landmark orientation markers are illustrative, not NTA demographic observations.
+const LANDMARKS = [
+  {borough:'Bronx',name:'Yankee Stadium',symbol:'⚾',coords:[40.82962,-73.92650]},
+  {borough:'Brooklyn',name:'Coney Island Cyclone',symbol:'🎡',coords:[40.57450,-73.97772]},
+  {borough:'Manhattan',name:'Empire State Building',symbol:'🏙️',coords:[40.74844,-73.98566]},
+  {borough:'Queens',name:'The Unisphere',symbol:'🌐',coords:[40.74640,-73.84507]},
+  {borough:'Staten Island',name:'St. George Ferry Terminal',symbol:'⛴️',coords:[40.64420,-74.07289]}
+];
 const LABEL_COORDS = {Bronx:[40.852,-73.876],Brooklyn:[40.657,-73.947],Manhattan:[40.787,-73.968],Queens:[40.733,-73.798],'Staten Island':[40.579,-74.145]};
 // A bad or differently projected polygon must not zoom the map out to the world.
 function plausibleNYCBounds(bounds){
@@ -13,7 +21,7 @@ function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
 const ui = Object.fromEntries(['borough','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count'].map(id=>[id,document.getElementById(id)]));
-let records=[], map, geoLayer, boroughLabels, selected=null, byCode=new Map();
+let records=[], map, geoLayer, boroughLabels, landmarkLayer, selected=null, byCode=new Map();
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -27,8 +35,8 @@ async function loadGeography(){
 }
 function baseStyle(record){
   const fill=BOROUGH_COLORS[record.borough] || '#cbd5dc';
-  if(ui.borough.value==='all') return {color:fill,weight:.5,opacity:1,fillColor:fill,fillOpacity:1};
-  return {color:'#ffffff',weight:1.2,opacity:1,fillColor:record.special?'#cad4da':fill,fillOpacity:.96};
+  if(ui.borough.value==='all') return {color:'#241039',weight:.72,opacity:.9,fillColor:fill,fillOpacity:1};
+  return {color:'#241039',weight:1.3,opacity:1,fillColor:record.special?'#dee6ed':fill,fillOpacity:.96};
 }
 function writeMeta(pairs){
   ui['detail-meta'].replaceChildren();
@@ -40,13 +48,13 @@ function writeMeta(pairs){
 }
 function overviewProfile(){
   ui['detail-name'].textContent='Explore the five boroughs';
-  ui['detail-intro'].textContent='Choose a borough on the map or use the buttons above to explore its neighborhoods. Data layers will be introduced after verification.';
+  ui['detail-intro'].textContent='Pick a neon borough, tap a landmark icon, or use the search to explore official NYC neighborhood areas.';
   writeMeta([['Geographic coverage','New York City'],['Boroughs','5'],['2020 NTAs',String(records.length)]]);
 }
 function boroughProfile(borough){
   const local=filterNtas(records,borough);
   ui['detail-name'].textContent=borough;
-  ui['detail-intro'].textContent='Select a neighborhood polygon to open its profile. Light gray polygons identify special-purpose areas.';
+  ui['detail-intro'].textContent='Tap any neighborhood for its profile. The landmark icon helps orient your view; gray areas are special-purpose NTAs.';
   writeMeta([['Borough',borough],['2020 NTAs',String(local.length)],['Special-purpose areas',String(local.filter(r=>r.special).length)]]);
 }
 function switchBorough(borough){
@@ -62,7 +70,7 @@ function display(record){
   writeMeta([['Borough',record.borough],['2020 NTA code',record.code],['Area classification',record.special?'Special purpose':'Residential'],['NTA type code',record.ntaType||'Not provided']]);
   geoLayer.eachLayer(layer=>{
     const r=byCode.get(layer.feature.properties.__ntaCode);
-    layer.setStyle(r===record?{color:'#143752',weight:3,fillColor:'#ffe097',fillOpacity:1}:baseStyle(r));
+    layer.setStyle(r===record?{color:'#241039',weight:4,fillColor:'#FFFFFF',fillOpacity:1}:baseStyle(r));
   });
   const layer=geoLayer.getLayers().find(x=>x.feature.properties.__ntaCode===record.code);
   if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[48,48],maxZoom:14});}
@@ -80,6 +88,25 @@ function render(){
   if(borough==='all'){
     if(!map.hasLayer(boroughLabels))boroughLabels.addTo(map);
   }else if(map.hasLayer(boroughLabels))map.removeLayer(boroughLabels);
+  landmarkLayer.clearLayers();
+  for(const landmark of LANDMARKS){
+    if(borough!=='all' && borough!==landmark.borough)continue;
+    const icon=L.divIcon({
+      className:'comic-landmark',
+      html:'<span class="comic-landmark-inner" aria-hidden="true">'+landmark.symbol+'</span>',
+      iconSize:[42,42],
+      iconAnchor:[21,21]
+    });
+    const marker=L.marker(landmark.coords,{
+      icon,keyboard:true,title:landmark.name+', '+landmark.borough,
+      alt:landmark.name
+    }).addTo(landmarkLayer);
+    marker.bindTooltip(landmark.name+' · '+landmark.borough,{direction:'top',offset:[0,-21],className:'comic-tooltip'});
+    marker.on('click',()=>{
+      if(ui.borough.value==='all')switchBorough(landmark.borough);
+      status(landmark.name+' is in '+landmark.borough+'. Select a neighborhood to explore NTA details.');
+    });
+  }
   for(const button of document.querySelectorAll('[data-borough]')){
     const active=button.dataset.borough===borough;
     button.classList.toggle('active',active);
@@ -115,10 +142,11 @@ async function init(){
         if(ui.borough.value==='all')switchBorough(r.borough);
         else{display(r);status('Selected '+r.name+' ('+r.code+'), '+r.borough+'.');}
       });
-      layer.on('mouseover',()=>{if(ui.borough.value!=='all'&&selected!==r)layer.setStyle({weight:2,color:'#1c4557'});});
+      layer.on('mouseover',()=>{if(ui.borough.value!=='all'&&selected!==r)layer.setStyle({weight:3,color:'#241039'});});
       layer.on('mouseout',()=>{if(selected!==r)layer.setStyle(baseStyle(r));});
     }}).addTo(map);
     boroughLabels=L.layerGroup();
+    landmarkLayer=L.layerGroup().addTo(map);
     for(const [borough,point] of Object.entries(LABEL_COORDS)){
       const icon=L.divIcon({className:'borough-label',html:'<span>'+borough+'</span>',iconSize:[146,42],iconAnchor:[73,21]});
       L.marker(point,{icon,keyboard:true,title:'Explore '+borough}).on('click',()=>switchBorough(borough)).addTo(boroughLabels);
