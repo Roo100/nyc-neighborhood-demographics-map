@@ -106,6 +106,10 @@ async function checkViewport(label, viewport) {
   assert.ok(firstPopup.includes('School district'));
   assert.ok(firstPopup.includes('Borough president'));
   assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
+  const popupWidth=await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-content').last()
+    .evaluate(element=>element.getBoundingClientRect().width);
+  assert.ok(popupWidth>=245,'Civic popup content must be readable, not a tiny vertical text strip: '+popupWidth);
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-neighborhood-click-popup.png',fullPage:true});
   assert.equal(await page.locator('#detail-name').textContent(),heading,'Selected map neighborhood and side profile must match');
   // Close the popup using the exposed accessible close control. Avoid relying
   // on pixel geometry if test zoom/scroll has positioned the control at edge.
