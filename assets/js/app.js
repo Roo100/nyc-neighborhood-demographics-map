@@ -314,20 +314,20 @@ function switchBorough(borough){
   const layerName=ui['civic-layer'].value==='boards'?'community boards':'neighborhoods';
   status(borough==='all'?'Showing all five NYC boroughs and their '+layerName+'.':'Exploring '+borough+' '+layerName+'.');
 }
-function display(record){
+function display(record,zoom=true){
   if(ui.borough.value!==record.borough){ui.borough.value=record.borough;render();}
   selected=record;
   ui['profile-kicker'].textContent='NEIGHBORHOOD PROFILE';
   ui['detail-name'].textContent=record.name;
   ui['detail-intro'].textContent=record.special?'Official special-purpose area; it may have limited or no residential population.':'Official 2020 Neighborhood Tabulation Area. Demographic and election results are not yet attached.';
-  writeMeta([['Borough',record.borough],['2020 NTA code',record.code],['Area classification',record.special?'Special purpose':'Residential'],['NTA type code',record.ntaType||'Not provided']]);
+  writeMeta([['Borough',record.borough],['Area type',record.special?'Special-purpose area':'Neighborhood']]);
   updateCivicContext(record.borough);
   geoLayer.eachLayer(layer=>{
     const r=byCode.get(layer.feature.properties.__ntaCode);
     layer.setStyle(styleFor(r));
   });
   const layer=geoLayer.getLayers().find(x=>x.feature.properties.__ntaCode===record.code);
-  if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[48,48],maxZoom:14});}
+  if(layer){layer.bringToFront();if(zoom)fitNYCBounds(layer.getBounds(),{padding:[48,48],maxZoom:14});}
 }
 // Community Board boundaries (DCP 2026) have an independent source and are NOT NTA matches.
 function communityStyle(board){
@@ -592,7 +592,7 @@ function render(){
   ui['nta-options'].replaceChildren();
   for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){
     const option=document.createElement('option');
-    option.value=r.name+' ('+r.code+')';
+    option.value=r.name;
     ui['nta-options'].append(option);
   }
   ui.neighborhood.disabled=mode!=='nta';
@@ -684,7 +684,7 @@ function render(){
     if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
   }
 }
-function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status(`Selected ${found.name} (${found.code}), ${found.borough}.`);}else{status('No matching NTA in the selected borough. Try another spelling or clear the borough filter.',true);}}
+function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status('Selected '+found.name+', '+found.borough+'. Click any street in the neighborhood to view its community board.');}else{status('No matching neighborhood in the selected borough. Try another spelling or clear the borough filter.',true);}}
 function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
@@ -742,9 +742,14 @@ async function init(){
     geoLayer=L.geoJSON(null,{style:feature=>baseStyle(byCode.get(feature.properties.__ntaCode)),onEachFeature:(feature,layer)=>{
       const r=byCode.get(feature.properties.__ntaCode);
       layer.bindTooltip(`${r.name} · ${r.borough}`,{sticky:true,direction:'top'});
-      layer.on('click',()=>{
+      layer.on('click',event=>{
+        // The clicked point, not the NTA centroid, determines the board.
+        // A single NTA can cross more than one board or school district.
+        if(event.originalEvent)L.DomEvent.stopPropagation(event.originalEvent);
         if(ui.borough.value==='all')switchBorough(r.borough);
-        else{display(r);status('Selected '+r.name+' ('+r.code+'), '+r.borough+'.');}
+        display(r,false);
+        identifyCommunityAtPoint(event.latlng,r);
+        status('Showing neighborhood and civic information for '+r.name+', '+r.borough+'.');
       });
       layer.on('mouseover',()=>{if(ui.borough.value!=='all'&&selected!==r)layer.setStyle({weight:3,color:'#241039'});});
       layer.on('mouseout',()=>{if(selected!==r)layer.setStyle(baseStyle(r));});
