@@ -27,23 +27,32 @@ def build(rows, nta_codes):
     if not isinstance(rows, list) or not (2000 <= len(rows) <= 3000):
         raise ValueError(f"Unexpected crosswalk record count: {len(rows) if isinstance(rows, list) else 'not a list'}")
     pairs = {}
+    unassigned = []
+    seen = set()
     for row in rows:
         geoid = required(row, "geoid")
         nta = required(row, "nta2020")
         if len(geoid) != 11 or not geoid.isdigit() or not geoid.startswith("36"):
             raise ValueError(f"Unexpected Census tract GEOID: {geoid!r}")
+        if geoid in seen:
+            raise ValueError(f"Census tract GEOID {geoid} appears more than once")
+        seen.add(geoid)
+        if not nta:
+            # Official source includes some tracts without an NTA. Never invent a code.
+            unassigned.append(geoid)
+            continue
         if nta not in nta_codes:
             raise ValueError(f"Tract {geoid}: NTA {nta!r} does not match pinned geography")
-        if geoid in pairs:
-            raise ValueError(f"Census tract GEOID {geoid} appears more than once")
         pairs[geoid] = nta
+    if len(pairs) < 1800:
+        raise ValueError("Too few mapped tracts; source may be incomplete")
     if len({value for value in pairs.values()}) < 180:
         raise ValueError("Insufficient NTA coverage; source could be truncated or incompatible")
     output = io.StringIO(newline="")
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(["tract_geoid", "nta2020"])
     writer.writerows(sorted(pairs.items()))
-    return output.getvalue(), pairs
+    return output.getvalue(), pairs, sorted(unassigned)
 
 
 def main():
@@ -57,14 +66,17 @@ def main():
     with urlopen(request, timeout=90) as response:
         raw = response.read()
     rows = json.loads(raw)
-    csv_text, pairs = build(rows, nta_codes)
+    csv_text, pairs, unassigned = build(rows, nta_codes)
     TARGET.write_text(csv_text, encoding="utf-8", newline="")
     report = {
         "status": "VALID",
         "source_dataset_id": "hm78-6dwm",
         "source_url": SOURCE,
         "source_geography": "2020 Census tracts and 2020 NTAs",
-        "tracts": len(pairs),
+        "tracts_in_source": len(rows),
+        "mapped_tracts": len(pairs),
+        "unassigned_tracts_count": len(unassigned),
+        "unassigned_tract_geoids": unassigned,
         "nta_codes_with_at_least_one_tract": len(set(pairs.values())),
         "unmatched_nta_codes": sorted(nta_codes - set(pairs.values())),
         "csv_sha256": hashlib.sha256(csv_text.encode("utf-8")).hexdigest(),
