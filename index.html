@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NYC Neighborhood Atlas | Explore the Five Boroughs</title>
-  <meta name="description" content="A clear, city-only interactive map of New York City’s five boroughs and their neighborhoods, grounded in official 2020 boundaries." />
+  <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
+  <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
   <link rel="stylesheet" href="assets/css/styles.css" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -13,9 +13,10 @@
 <body>
   <div class="shell">
     <header class="masthead">
-      <div class="eyebrow">NEW YORK CITY <span>·</span> INTERACTIVE NEIGHBORHOOD ATLAS</div>
-      <h1>Explore <em>New York City</em></h1>
-      <p>One city. Five boroughs. Explore neighborhoods through an interactive, NYC-only map built on official 2020 geographic boundaries.</p>
+      <div class="eyebrow">THE FIVE BOROUGHS <span>★</span> ONE CITY <span>★</span> YOUR ATLAS</div>
+      <h1>NYC <em>POPS!</em></h1>
+      <span class="cover-sticker" aria-hidden="true">NYC<br>× 5</span>
+      <p>Five bold boroughs. Hundreds of neighborhoods. Tap a borough, find a landmark, or search a neighborhood on a map powered by official 2020 NYC geography.</p>
     </header>
     <main>
       <nav class="borough-links" aria-label="Explore New York City boroughs">
@@ -30,15 +31,15 @@
         <div class="field"><label for="borough">Borough</label><select id="borough" disabled><option value="all">All five boroughs</option></select></div>
         <div class="field search-field"><label for="neighborhood">Find neighborhood or NTA code</label><input id="neighborhood" type="search" placeholder="Search e.g. Harlem, Astoria, BX0101" autocomplete="off" list="nta-options" disabled /><datalist id="nta-options"></datalist></div>
         <button id="search-button" type="button" disabled>Find on map</button>
-        <button id="reset" type="button" class="secondary" disabled>Reset view</button>
+        <button id="reset" type="button" class="secondary" disabled>Show all NYC</button>
       </section>
       <div class="status" id="status" role="status" aria-live="polite">Loading official NYC geography…</div>
       <section class="workspace" aria-label="NYC neighborhood map and details">
         <div class="map-frame">
           <div id="map" role="region" aria-label="Interactive city-only map of New York City boroughs and 2020 Neighborhood Tabulation Areas"></div>
-          <div class="map-key" aria-label="Map legend"><div class="key-title">The five boroughs</div><div><span class="swatch bronx"></span> Bronx</div><div><span class="swatch brooklyn"></span> Brooklyn</div><div><span class="swatch manhattan"></span> Manhattan</div><div><span class="swatch queens"></span> Queens</div><div><span class="swatch staten"></span> Staten Island</div><div class="key-note">Select a borough to see its NTAs</div></div>
+          <div class="map-key" aria-label="Map legend"><div class="key-title">Color your NYC</div><div><span class="swatch bronx"></span> Bronx</div><div><span class="swatch brooklyn"></span> Brooklyn</div><div><span class="swatch manhattan"></span> Manhattan</div><div><span class="swatch queens"></span> Queens</div><div><span class="swatch staten"></span> Staten Island</div><div class="key-note">⚾ 🎡 🏙️ 🌐 ⛴️ landmark icons mark places to recognize each borough. Tap a borough for neighborhood boundaries.</div></div>
         </div>
-        <aside class="details" aria-live="polite"><div class="aside-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl><div class="data-notice"><strong>Research layers coming next</strong><p>Income, race and ethnicity, voter registration, and election layers will be added after geographic alignment and source checks.</p></div><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official NTA source</a></aside>
+        <aside class="details" aria-live="polite"><div class="aside-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl><div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, race and ethnicity, voter registration, and election layers remain unavailable until their source data and geographic alignment pass validation.</p></div><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official NTA source</a></aside>
       </section>
       <section class="below"><div><strong id="feature-count">—</strong><span>NTAs in selected borough filter</span></div><p>2020 NTA boundaries are statistical reporting areas, not definitive neighborhood definitions. Parks, airports, cemeteries and other special-purpose areas are identified in borough detail view. Source: NYC Department of City Planning, dataset <a href="https://data.cityofnewyork.us/d/9nt8-h7nd">9nt8-h7nd</a>.</p></section>
     </main>
