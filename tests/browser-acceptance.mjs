@@ -88,12 +88,26 @@ async function checkViewport(label, viewport) {
   await page.locator('#neighborhood').fill('Longwood');
   await page.locator('#search-button').click();
   await page.locator('#detail-name').filter({hasText:'Longwood'}).waitFor();
-  assert.equal(await page.locator('#detail-meta').textContent().then(text=>text.includes('BX0202')),true);
+  assert.ok(!(await page.locator('#detail-meta').textContent()).includes('BX0202'),'NTA identifiers should not be visible in neighborhood profiles');
+  assert.equal(await page.locator('#neighborhood').getAttribute('placeholder'),'Search e.g. Harlem, Astoria, Longwood');
   await page.waitForFunction(()=>document.querySelector('#civic-source')?.textContent.includes('59 boards'));
   await page.locator('#identify-board-center').click();
   await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
     document.querySelector('#point-board-panel')?.dataset.lookupStatus));
   assert.equal(await page.locator('#detail-name').textContent(),'Longwood','NTA profile must survive independent map point board lookup');
+  await page.locator('.nyc-pop-info-popup .nyc-pop-info-title').waitFor();
+  const firstPopup=await page.locator('.nyc-pop-info-card').textContent();
+  assert.ok(firstPopup.includes('Community board'));
+  assert.ok(firstPopup.includes('School district'));
+  assert.ok(!firstPopup.includes('BX0202'),'No internal NTA code in public popup');
+  // The clicked neighborhood should have its own immediate on-map popup.
+  await page.locator('.nyc-pop-info-popup .leaflet-popup-close-button').click();
+  const neighborhoodMapBox=await page.locator('#map').boundingBox();
+  await page.locator('#map').click({position:{
+    x:Math.round(neighborhoodMapBox.width/2),y:Math.round(neighborhoodMapBox.height/2)
+  }});
+  await page.locator('.nyc-pop-info-popup .nyc-pop-info-title').waitFor();
+  assert.ok(!(await page.locator('.nyc-pop-info-card').textContent()).includes('BX0202'));
   await page.waitForTimeout(600);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
@@ -128,6 +142,8 @@ async function checkViewport(label, viewport) {
     document.querySelector('#point-board-panel')?.dataset.lookupStatus),null,{timeout:15000});
   assert.ok((await page.locator('#point-board-coordinates').textContent()).includes('Selected map point:'));
   assert.ok(await page.locator('.grid-map-click-marker').count()===1);
+  assert.equal(await page.locator('.nyc-pop-info-popup').count(),1);
+  await page.locator('.nyc-pop-info-popup .leaflet-popup-close-button').click();
   // The point can also be selected by clicking the map grid directly.
   const mapBoxForClick=await page.locator('#map').boundingBox();
   await page.locator('#map').click({position:{x:Math.round(mapBoxForClick.width/2),y:Math.round(mapBoxForClick.height/2)}});
@@ -200,7 +216,7 @@ async function checkViewport(label, viewport) {
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
-    bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood/BX0202',title,
+    bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
     mapGridBoardLookup:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
