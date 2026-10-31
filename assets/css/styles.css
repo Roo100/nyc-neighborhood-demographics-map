@@ -567,3 +567,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .map-key .acs-legend-note{grid-column:1/-1;max-width:none}
   .acs-popup-details[open] .acs-popup-facts{max-height:145px}
 }
+
+
+/* BOE 2026 Council party registration: administrative district, not an NTA. */
+.political-field select{background:#f1e7ff;border:2px solid #241039;font-weight:900}
+.party-profile{margin:17px 0;padding:14px;border:3px solid #241039;border-radius:11px;
+  background:#f0f8ff;box-shadow:4px 4px 0 #241039}
+.party-profile h3{margin:0 0 8px;font:900 17px/1.3 system-ui,sans-serif;color:#241039;text-transform:uppercase}
+.party-profile-facts{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1.2fr);
+  gap:8px 10px;margin:12px 0}
+.party-profile-facts dt,.party-profile-facts dd{font-size:12px;line-height:1.4;color:#241039;overflow-wrap:anywhere}
+.party-profile-facts dt{font-weight:800}
+.party-profile-facts dd{text-align:right;font-weight:900}
+.party-profile-note{font-size:11px!important;color:#483c5c!important;line-height:1.45!important}
+.party-popup-details{margin:10px 0;border:2px solid #241039;background:#edfaff;border-radius:8px;padding:8px 10px}
+.party-popup-details summary{font-size:12px;cursor:pointer;font-weight:900;color:#241039}
+.party-popup-details[open] dl{max-height:145px;overflow:auto}
+@media(max-width:600px){
+  .political-field{width:100%}
+  .party-profile{padding:12px}
+  .party-popup-details[open] dl{max-height:130px}
+}
