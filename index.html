@@ -6,7 +6,7 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=compact-layout-2026-10-31-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=balanced-support-row-2026-10-31-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="assets/js/app.js?v=demographics-popup-2026-10-31-1"></script>
 </head>
@@ -97,6 +97,8 @@
             <div id="acs-profile-content"></div>
             <p class="acs-method-note" id="acs-profile-note"></p>
           </section>
+          <p id="school-pins-count" class="school-pins-count" aria-live="polite" hidden>Zoom in to see mapped school pins.</p></aside>
+        <section class="support-panels" aria-label="Additional map data and sources">
           <section id="point-board-panel" class="point-board-panel" aria-labelledby="point-board-title" aria-live="polite">
             <h3 id="point-board-title"><span aria-hidden="true">📍</span> Community board at map point</h3>
             <p id="point-board-result">Click a street or place on the map to identify its community board from official 2026 boundaries.</p>
@@ -104,9 +106,9 @@
             <button type="button" id="identify-board-center" class="point-board-center" disabled>Identify board at map center</button>
             <a class="point-board-directory" href="https://www.nyc.gov/site/communityboards/index.page" target="_blank" rel="noopener noreferrer">Official NYC community board directory</a>
           </section>
-          <p id="school-pins-count" class="school-pins-count" aria-live="polite" hidden>Zoom in to see mapped school pins.</p>
-        
-        <div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, poverty, and race/ethnicity map layers use screened 2020–2024 ACS five-year tract aggregates, with derived estimates and explicit missing values. February 2026 official party enrollment is shown by City Council district, not by neighborhood. Candidate election results and turnout remain separate and unpublished.</p></div><div class="geography-links"><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official 2020 NTAs</a><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/5crt-au7u">Official 2026 community districts</a></div></aside>
+          <div class="data-support"><div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, poverty, and race/ethnicity map layers use screened 2020–2024 ACS five-year tract aggregates, with derived estimates and explicit missing values. February 2026 official party enrollment is shown by City Council district, not by neighborhood. Candidate election results and turnout remain separate and unpublished.</p></div>
+            <div class="geography-links"><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official 2020 NTAs</a><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/5crt-au7u">Official 2026 community districts</a></div></div>
+        </section>
       <section class="civic-panel" aria-labelledby="civic-panel-title">
           <h3 id="civic-panel-title">Your NYC civic guide</h3>
           <p id="civic-context">Select a borough or community board to see its government context. Legislative districts may cross neighborhoods.</p>
