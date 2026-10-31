@@ -37,3 +37,8 @@ After geographic acceptance, incorporate versioned ACS median income, poverty an
 
 ## Data caution
 NTAs are statistical areas rather than exact vernacular neighborhood boundaries. Do not derive borough from NTA prefix alone: use the official borough field and document administrative exceptions.
+
+## Leaflet styling reliability (October 31, 2026)
+The official Leaflet 1.9.4 CSS is copied into `assets/css/leaflet.css` from [Leaflet/Leaflet v1.9.4](https://github.com/Leaflet/Leaflet/blob/v1.9.4/dist/leaflet.css), under Leaflet's BSD-2-Clause license. This avoids broken or blocked third-party CSS requests that can otherwise leave map tiles displaced, remove clipping, and hide map controls and SVG boundaries. The Leaflet JavaScript library remains pinned to v1.9.4.
+
+After a deployment, verify the browser successfully loads `assets/css/leaflet.css` and that the polygons overlay the map at their correct coordinates.
