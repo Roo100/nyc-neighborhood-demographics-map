@@ -406,3 +406,63 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .point-board-panel{padding:13px 12px}
   .point-board-center{font-size:.76rem;width:100%}
 }
+
+
+/* Comic-book neighborhood popup, anchored to the selected street-grid location. */
+.nyc-pop-info-popup .leaflet-popup-content-wrapper{
+  padding:0!important;border:3px solid #241039!important;
+  border-radius:15px!important;background:#fff!important;
+  box-shadow:6px 7px 0 #241039!important;
+}
+.nyc-pop-info-popup .leaflet-popup-content{
+  margin:0!important;width:auto!important;
+}
+.nyc-pop-info-popup .leaflet-popup-tip{background:#fff!important;border:2px solid #241039}
+.nyc-pop-info-popup .leaflet-popup-close-button{
+  z-index:1;top:10px!important;right:10px!important;
+  width:30px!important;height:30px!important;line-height:27px!important;
+  border-radius:50%;border:2px solid #241039;
+  background:#fff!important;color:#241039!important;
+  font-size:22px!important;font-weight:900;
+}
+.nyc-pop-info-card{font-family:system-ui,sans-serif;color:#241039;padding:16px 15px 14px}
+.nyc-pop-info-eyebrow{
+  display:inline-block;padding:4px 7px;margin:0 30px 6px 0;
+  background:#C7FF00;border:1.5px solid #241039;border-radius:5px;
+  color:#241039;font-weight:900;font-size:10px;letter-spacing:.04em;
+}
+.nyc-pop-info-title{
+  color:#241039!important;font-family:Impact,"Arial Black",system-ui,sans-serif;
+  font-size:clamp(22px,5vw,29px);line-height:1.12;
+  margin:4px 0!important;text-transform:uppercase;
+}
+.nyc-pop-info-subtitle{font-weight:800;font-size:13px;margin:0 0 12px!important}
+.nyc-pop-info-facts{display:grid;grid-template-columns:110px minmax(0,1fr);
+  gap:9px 12px;margin:12px 0;padding:12px 0;
+  border-top:2px solid #241039;border-bottom:2px solid #241039}
+.nyc-pop-info-facts dt{
+  text-align:left;font-size:12px;line-height:1.35;font-weight:800;color:#564a68;
+}
+.nyc-pop-info-facts dd{
+  min-width:0;margin:0;text-align:left;font-size:13px;line-height:1.35;
+  font-weight:900;color:#241039;overflow-wrap:anywhere;
+}
+.nyc-pop-info-links{display:flex;flex-wrap:wrap;gap:6px}
+.nyc-pop-info-links a{
+  display:inline-block;color:#241039!important;border:2px solid #241039;
+  background:#00D9FF;border-radius:7px;padding:7px 9px;
+  font-size:11px;font-weight:800;text-decoration:none!important;
+}
+.nyc-pop-info-links a:hover{background:#C7FF00;text-decoration:underline!important}
+.nyc-pop-info-disclaimer{
+  font-size:10px!important;line-height:1.35!important;
+  color:#574c68!important;margin:11px 0 0!important;
+}
+@media(max-width:600px){
+  .nyc-pop-info-popup .leaflet-popup-content-wrapper{max-width:calc(100vw - 40px)}
+  .nyc-pop-info-card{padding:12px}
+  .nyc-pop-info-title{font-size:23px}
+  .nyc-pop-info-facts{grid-template-columns:90px minmax(0,1fr);gap:8px}
+  .nyc-pop-info-facts dt,.nyc-pop-info-facts dd{font-size:11px}
+  .nyc-pop-info-links a{font-size:10px;padding:6px 8px}
+}
