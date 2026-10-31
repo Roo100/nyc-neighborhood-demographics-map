@@ -35,5 +35,6 @@ jobs:
             data/elections/mayor_2025_ed_schema_audit.json
             data/elections/mayor_2025_ed_units_audit.json
             data/elections/mayor_2025_recap_reconciliation_audit.json
+            data/elections/mayor_2025_verified_citywide.json
           if-no-files-found: warn
           retention-days: 10
