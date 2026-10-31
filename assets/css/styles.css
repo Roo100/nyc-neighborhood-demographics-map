@@ -759,3 +759,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .nov-ballot-links{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
 .nov-ballot-links a{display:block;padding:10px 13px;border:2px solid #241039;border-radius:8px;background:#C7FF00;box-shadow:2px 2px 0 #241039;font-size:13px}
 @media(max-width:700px){.nov-ballot-columns{grid-template-columns:1fr}.nov-ballot-links{flex-direction:column}.nov-ballot-proposals{padding:12px}}
+
+/* Official November 2026 polling locations — independently toggled map layer. */
+.polling-sites-field{flex:0 1 215px!important;min-width:185px!important}
+.polling-sites-field select{background:#fff0fa;border:2px solid #241039;font-weight:850}
+.poll-sites-info{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:5px 14px;padding:9px 18px;background:#fff5ce;
+  border-inline:4px solid #241039;border-top:1px solid #241039;
+  color:#241039;font-size:12px;line-height:1.45;font-weight:750
+}
+.poll-sites-info a{color:#51229d;text-decoration:underline;text-underline-offset:2px;font-weight:900}
+.poll-site-popup{font:13px/1.45 system-ui,sans-serif;color:#241039;max-width:280px}
+.poll-site-popup strong{display:block;font-size:16px;font-weight:900;line-height:1.25}
+.poll-site-popup p{margin:7px 0}
+.poll-site-popup .poll-site-warning{background:#fff1cb;padding:8px;border-left:3px solid #241039}
+.poll-site-popup a{display:inline-block;font-weight:900;color:#51229d;margin-top:5px}
+@media(max-width:600px){.polling-sites-field{flex:1 1 100%!important;min-width:0!important}.poll-sites-info{padding:10px 12px}}
