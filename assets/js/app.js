@@ -28,7 +28,7 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','political-metric','political-field','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','council-picker-field','council-picker','political-metric','political-field','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
   communityByCode=new Map(), communityLayer=null,
@@ -836,7 +836,8 @@ function selectCouncilDistrict(entry,latlng){
     if(match)layer.setStyle(councilStyle(match));
   });
   showCouncilProfile(entry);
-  identifyCommunityAtPoint(latlng);
+  ui['council-picker'].value=String(entry.code);
+  if(latlng)identifyCommunityAtPoint(latlng);
   status('City Council District '+entry.code+' · 2026 BOE party enrollment. This is voter registration, not election votes.');
 }
 function initializeCouncilMap(){
@@ -890,6 +891,20 @@ function render(){
   const enrollmentMode=mode==='enrollment'&&!!councilLayer;
   ui['political-field'].hidden=!enrollmentMode;
   ui['political-metric'].disabled=!enrollmentMode;
+  ui['council-picker-field'].hidden=!enrollmentMode;
+  ui['council-picker'].disabled=!enrollmentMode;
+  ui['council-picker'].replaceChildren();
+  const councilPlaceholder=document.createElement('option');
+  councilPlaceholder.value='';councilPlaceholder.textContent='Select a Council district';
+  ui['council-picker'].append(councilPlaceholder);
+  if(enrollmentMode){
+    for(const entry of legislativeLookup.council.records){
+      const option=document.createElement('option');
+      option.value=String(entry.code);option.textContent='Council District '+entry.code;
+      ui['council-picker'].append(option);
+    }
+    if(selectedCouncil)ui['council-picker'].value=String(selectedCouncil.code);
+  }
   ui.borough.disabled=enrollmentMode;
   document.getElementById('party-profile').hidden=!enrollmentMode||!selectedCouncil;
   ui['demographic-field'].hidden=mode!=='nta';
@@ -1061,6 +1076,20 @@ function wire(){
     });
     if(selected)showACSProfile(selected);
     status('Viewing '+ACS_LAYER_OPTIONS[ui['demographic-layer'].value].label+'. Gray areas have missing or unreliable ACS estimates.');
+  });
+  ui['council-picker'].addEventListener('change',()=>{
+    if(!councilLayer||!legislativeLookup.council)return;
+    const selectedCode=Number(ui['council-picker'].value);
+    const entry=legislativeLookup.council.records.find(x=>x.code===selectedCode);
+    resetMapPointLookup();
+    if(!entry){
+      selectedCouncil=null;showCouncilOverview();
+      fitNYCBounds(councilLayer.getBounds(),{padding:[35,35],animate:false});
+      return;
+    }
+    selectCouncilDistrict(entry,null);
+    const layer=councilLayer.getLayers().find(x=>Number(x.feature.properties.district)===entry.code);
+    if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[40,40],maxZoom:13,animate:false});}
   });
   ui['political-metric'].addEventListener('change',()=>{
     if(!enrollmentReady||!councilLayer)return;
