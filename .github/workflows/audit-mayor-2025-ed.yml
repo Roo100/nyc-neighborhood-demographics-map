@@ -22,11 +22,15 @@ jobs:
           python-version: '3.12'
       - name: Download and inspect BOE certified mayor ED CSV — no publication
         run: python scripts/audit_boe_mayor_2025_csv.py
+      - name: Audit candidate and administrative vote units against certified recap
+        run: python scripts/audit_boe_mayor_2025_units.py
       - name: Archive schema evidence (not deployed to site)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: 2025-mayor-boe-ed-audit
-          path: data/elections/mayor_2025_ed_schema_audit.json
+          path: |
+            data/elections/mayor_2025_ed_schema_audit.json
+            data/elections/mayor_2025_ed_units_audit.json
           if-no-files-found: warn
           retention-days: 10
