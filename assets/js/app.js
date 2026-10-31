@@ -246,6 +246,9 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
   root.append(disclaimer);
   const popupMaxHeight=Math.max(190,Math.min(350,map.getSize().y-100));
+  // Guarantee that a new street or neighborhood selection replaces, rather
+  // than stacks on top of, the previous card.
+  map.closePopup();
   L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,
     maxHeight:popupMaxHeight,keepInView:true,autoPan:true,
     autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
@@ -741,7 +744,7 @@ async function init(){
     if(records.length!==262) status(`Boundary dataset contains ${records.length} NTAs; expected 262. Verify the source version before publication.`,true);
     byCode=new Map(records.map(r=>[r.code,r]));
     for(const r of records) r.feature.properties.__ntaCode=r.code;
-    geoLayer=L.geoJSON(null,{style:feature=>baseStyle(byCode.get(feature.properties.__ntaCode)),onEachFeature:(feature,layer)=>{
+    geoLayer=L.geoJSON(null,{bubblingMouseEvents:false,style:feature=>baseStyle(byCode.get(feature.properties.__ntaCode)),onEachFeature:(feature,layer)=>{
       const r=byCode.get(feature.properties.__ntaCode);
       layer.bindTooltip(`${r.name} · ${r.borough}`,{sticky:true,direction:'top'});
       layer.on('click',event=>{
