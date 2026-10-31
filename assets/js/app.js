@@ -26,7 +26,7 @@ function status(message,error=false){ui.status.textContent=message;ui.status.cla
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
   // Borough-first cartography: no street basemap, surrounding jurisdictions or tile dependency.
-  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,minZoom:9,maxZoom:16,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,zoomSnap:0.1,zoomDelta:0.5,minZoom:9,maxZoom:16,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
 }
 async function download(url){const response=await fetch(url);if(!response.ok) throw new Error(`HTTP ${response.status}`);return response.json();}
 async function loadGeography(){
