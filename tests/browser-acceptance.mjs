@@ -4,6 +4,11 @@ import { chromium } from 'playwright';
 
 const BASE_URL = process.env.ATLAS_TEST_URL || 'http://127.0.0.1:8765/';
 const OUTPUT = 'test-artifacts';
+const educationManifest = JSON.parse(fs.readFileSync('data/schools/validation-2026.json','utf8'));
+const schoolData = JSON.parse(fs.readFileSync('data/schools/k12-schools-nysed.geojson','utf8'));
+const bronxPublicSchool = schoolData.features.find(f=>f.properties.borough==='Bronx'&&f.properties.type==='Public');
+if(!bronxPublicSchool)throw new Error('Missing public Bronx school sample in pinned source');
+const bronxPublicCount=schoolData.features.filter(f=>f.properties.borough==='Bronx'&&f.properties.type==='Public').length;
 fs.mkdirSync(OUTPUT, {recursive:true});
 const browser = await chromium.launch({headless:true, args:['--no-sandbox']});
 
@@ -122,10 +127,56 @@ async function checkViewport(label, viewport) {
   assert.equal(await page.locator('#neighborhood').isEnabled(),true);
   await page.locator('#reset').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
+
+  // Independently pinned DCP school districts + NYSED K–12 school point records.
+  await page.waitForFunction(()=>['schooldistricts','schools'].every(v=>
+    !document.querySelector('#civic-layer option[value="'+v+'"]').disabled),
+    null,{timeout:45000});
+  await page.locator('#civic-layer').selectOption('schooldistricts');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='32');
+  assert.equal(await page.locator('#education-picker-field').isVisible(),true);
+  assert.equal(await page.locator('#education-picker option').count(),33);
+  assert.ok((await page.locator('#detail-intro').textContent()).includes('attendance zone'));
+  await page.locator('#education-picker').selectOption('10');
+  await page.locator('#detail-name').filter({hasText:'School District 10'}).waitFor();
+  await page.waitForTimeout(550);
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-school-district.png',fullPage:true});
+
+  await page.locator('#civic-layer').selectOption('schools');
+  await page.waitForFunction(expected=>
+      Number(document.querySelector('#feature-count').textContent.replace(/,/g,''))===expected,
+      educationManifest.nyc_school_count,{timeout:30000});
+  assert.equal(await page.locator('#school-filter-field').isVisible(),true);
+  assert.equal(await page.locator('#school-search-field').isVisible(),true);
+  await page.locator('[data-borough="Bronx"]').click();
+  await page.waitForFunction(expected=>Number(document.querySelector('#feature-count').textContent.replace(/,/g,''))===expected,
+    educationManifest.borough_counts.Bronx);
+  await page.locator('#school-type').selectOption('Public');
+  await page.waitForFunction(expected=>Number(document.querySelector('#feature-count').textContent.replace(/,/g,''))===expected,
+    bronxPublicCount);
+  await page.locator('#school-search').fill(bronxPublicSchool.properties.id);
+  await page.locator('#school-find').click();
+  await page.locator('#detail-name').filter({hasText:bronxPublicSchool.properties.name}).waitFor();
+  assert.ok((await page.locator('#detail-meta').textContent()).includes('Grade span'));
+  await page.waitForFunction(()=>document.querySelectorAll('.leaflet-interactive').length>0);
+  await page.waitForTimeout(500);
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-k12-school.png',fullPage:true});
+  assert.ok(await page.locator('#map').isVisible());
+  const widthCheck=await page.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:innerWidth}));
+  assert.ok(widthCheck.page<=widthCheck.viewport+2,'School mode must avoid horizontal overflow');
+
+  await page.locator('#civic-layer').selectOption('nta');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='50');
+  assert.equal(await page.locator('#school-search-field').isVisible(),false);
+  await page.locator('#reset').click();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood/BX0202',title,
-    streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,communityBoards:59,communityBoardSelected:'Bronx CB1',noJSExceptions:true,measure:measured}));
+    streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
+    communityBoards:59,communityBoardSelected:'Bronx CB1',
+    schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }
 
