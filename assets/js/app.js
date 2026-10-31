@@ -1192,7 +1192,27 @@ function wire(){
   ui.borough.addEventListener('change',()=>switchBorough(ui.borough.value));
   ui['search-button'].addEventListener('click',search);
   ui.neighborhood.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();search();}});
-  ui.reset.addEventListener('click',()=>switchBorough('all'));
+  ui.reset.addEventListener('click',()=>{
+    // Restore the public-facing default view, not just the borough filter.
+    resetMapPointLookup();
+    selected=null;selectedCommunity=null;selectedSchoolDistrict=null;
+    selectedSchool=null;selectedCouncil=null;
+    ui['civic-layer'].value='nta';
+    ui['demographic-layer'].value='borough';
+    ui['political-metric'].value='democrat';
+    ui['map-detail'].value='streets';
+    ui['school-type'].value='all';
+    ui['school-search'].value='';
+    ui['community-board'].value='';
+    ui['education-picker'].value='';
+    ui['council-picker'].value='';
+    ui.borough.value='all';
+    ui.neighborhood.value='';
+    setMapDetail('streets');
+    render();
+    fitNYCBounds(NYC_BOUNDS,{padding:[35,35],animate:false});
+    status('Map reset: all five boroughs, neighborhood colors, street grid and default filters.');
+  });
   for(const button of document.querySelectorAll('[data-borough]')){
     button.addEventListener('click',()=>switchBorough(button.dataset.borough));
   }
