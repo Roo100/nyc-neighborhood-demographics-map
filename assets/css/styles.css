@@ -334,3 +334,22 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .civic-panel .civic-links{grid-template-columns:1fr;gap:7px}
   .civic-panel .civic-links a{min-height:42px;font-size:13px;padding:9px 11px}
 }
+
+
+/* Education geography and K–12 school browsing — distinct from admissions zoning. */
+.education-picker-field select{background:#eaffc6;font-weight:800}
+.school-filter-field select{background:#fff0fa;font-weight:800}
+.school-search-field{
+  display:flex;flex-flow:row wrap;align-items:end;
+  min-width:min(390px,100%);gap:7px;
+}
+.school-search-field label{flex-basis:100%}
+.school-search-field input{flex:1;min-width:190px}
+.school-search-field button{
+  color:#241039;background:#00D9FF;font-size:.86rem;box-shadow:2px 3px 0 #241039
+}
+@media(max-width:600px){
+  .education-picker-field,.school-filter-field,.school-search-field{width:100%;min-width:0}
+  .school-search-field input{min-width:130px}
+  .school-search-field button{font-size:12px;padding:9px 10px}
+}
