@@ -2,6 +2,8 @@ import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict,lookupPolygonAtPoint} from './civic.js';
 import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
 import {ACS_FILE,ACS_LAYER_OPTIONS,validateACSDisplay,acsLayerMetric,acsLayerError,acsFill,dataLegend,formatACSValue,raceLabels} from './acs.js';
+import {DISTRICT_KINDS,OFFICIAL_LEGISLATIVE_DIRS,validateDistrictGeoJSON,validateOfficialNames,makeDistrictLookup,identifyLegislators,officialForDistrict} from './representation.js';
+import {ENROLLMENT_FILE,PARTY_OPTIONS,validateCouncilEnrollment,enrollmentShare,partyFill,partyLegend,enrollmentDetails} from './political.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -26,7 +28,7 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','council-picker-field','council-picker','political-metric','political-field','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
   communityByCode=new Map(), communityLayer=null,
@@ -35,7 +37,10 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   selectedSchool=null,selectedSchoolDistrict=null,
   communitySpatialIndex=null,schoolDistrictSpatialIndex=null,
   selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null,
-  acsLookup=new Map(),acsReady=false;
+  acsLookup=new Map(),acsReady=false,
+  legislativeLookup={},legislativeOfficials=null,
+  councilEnrollment=new Map(),enrollmentReady=false,
+  councilLayer=null,selectedCouncil=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -164,6 +169,10 @@ function setMapDetail(mode){
     const entry=schoolDistrictByCode.get(Number(layer.feature?.properties?.district));
     if(entry)layer.setStyle(schoolDistrictStyle(entry));
   });
+  if(councilLayer)councilLayer.eachLayer(layer=>{
+    const rec=legislativeLookup.council?.records.find(x=>x.code===Number(layer.feature?.properties?.district));
+    if(rec)layer.setStyle(councilStyle(rec));
+  });
   document.getElementById('street-map-note').textContent=mode==='streets'
     ? 'Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.'
     : 'Neon-only view: official NYC DCP 2020 NTA geography.';
@@ -179,6 +188,7 @@ function writeMeta(pairs){
 
 const preservedBoroughLegend=document.querySelector('.map-key').innerHTML;
 function updateACSLegend(){
+  if(ui['civic-layer'].value==='enrollment'&&enrollmentReady){updatePartyLegend();return;}
   const container=document.querySelector('.map-key');
   const layer=ui['demographic-layer'].value;
   if(layer==='borough'||!acsReady||ui['civic-layer'].value!=='nta'){
@@ -300,6 +310,31 @@ function resetMapPointLookup(){
   document.getElementById('point-board-panel').dataset.lookupStatus='idle';
 }
 
+function addCouncilEnrollmentToPopup(root,latlng,legislative){
+  if(!enrollmentReady||legislative.council?.status!=='match')return;
+  const record=councilEnrollment.get(legislative.council.record.code);
+  const details=enrollmentDetails(record,'active');
+  if(!details)return;
+  const section=document.createElement('details');
+  section.className='party-popup-details';
+  const summary=document.createElement('summary');
+  summary.textContent='Registered voters · Council District '+record.district+' (Feb 2026)';
+  const list=document.createElement('dl');
+  list.className='acs-popup-facts';
+  const row=(label,value)=>{
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=label;dd.textContent=value;list.append(dt,dd);
+  };
+  row('Active registered voters',details.total.toLocaleString('en-US'));
+  for(const p of details.parties){
+    row(p.name,p.count.toLocaleString('en-US')+' ('+(p.share??0).toFixed(1)+'% of active)');
+  }
+  row('Active + inactive voters',record.total.Total.toLocaleString('en-US'));
+  const note=document.createElement('p');
+  note.className='party-profile-note';
+  note.textContent='Source: NYC BOE 02/20/2026 Council District Summary. Registered voters, NOT candidate votes or neighborhood voting results. Districts can span multiple neighborhoods.';
+  section.append(summary,list,note);root.append(section);
+}
 function showCivicPopup(latlng,neighborhood,communityMatch){
   const root=document.createElement('div');
   root.className='nyc-pop-info-card';
@@ -309,7 +344,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   root.append(eyebrow);
   const title=document.createElement('h3');
   title.className='nyc-pop-info-title';
-  title.textContent=neighborhood?.name||'Selected NYC location';
+  title.textContent=neighborhood?.name||(ui['civic-layer'].value==='enrollment'&&selectedCouncil?'City Council District '+selectedCouncil.code:'Selected NYC location');
   root.append(title);
   if(neighborhood?.borough){
     const subtitle=document.createElement('p');
@@ -350,14 +385,37 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   const borough=neighborhood?.borough||boardBorough;
   if(borough&&BOROUGH_PRESIDENTS[borough])
     row('Borough president',BOROUGH_PRESIDENTS[borough]);
+  // Legislative districts are independent 2026 DCP polygons, not an NTA
+  // lookup. The official directory only assigns names when verified.
+  const legislative=identifyLegislators(legislativeLookup,latlng.lat,latlng.lng);
+  for(const key of ['council','senate','assembly','congress']){
+    const matched=legislative[key];
+    const label={council:'City Council representative',senate:'NY State Senator',
+      assembly:'NY State Assembly district',congress:'US House district'}[key];
+    if(matched.status==='match'){
+      const code=matched.record.code;
+      const official=officialForDistrict(legislativeOfficials,key,code);
+      row(label,(official?official+' · ':'')+'District '+code+
+        (key==='senate'&&!official?' · see official directory':''));
+    }else if(matched.status==='boundary'){
+      row(label,'District boundary — verify address');
+    }else if(matched.status==='unavailable'){
+      row(label,'Legislative district data loading / unavailable');
+    }else{
+      row(label,'No matched district at this location');
+    }
+  }
   root.append(facts);
   if(neighborhood)addACSPopupInfo(root,neighborhood);
+  addCouncilEnrollmentToPopup(root,latlng,legislative);
   const links=document.createElement('div');
   links.className='nyc-pop-info-links';
   for(const [label,url] of [
     ['Community board contacts','https://www.nyc.gov/site/communityboards/index.page'],
-    ['City Council district finder','https://council.nyc.gov/districts/'],
-    ['State legislators','https://elections.ny.gov/new-york-state-elected-officials'],
+    ['NYC City Council',OFFICIAL_LEGISLATIVE_DIRS.council],
+    ['NY State Senate',OFFICIAL_LEGISLATIVE_DIRS.senate],
+    ['NY State Assembly',OFFICIAL_LEGISLATIVE_DIRS.assembly],
+    ['US House',OFFICIAL_LEGISLATIVE_DIRS.congress],
     ['Browse K–12 schools','https://www.myschools.nyc/en/']
   ]){
     const a=document.createElement('a');
@@ -367,7 +425,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   root.append(links);
   const disclaimer=document.createElement('p');
   disclaimer.className='nyc-pop-info-disclaimer';
-  disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
+  disclaimer.textContent='All boundaries are assigned to this exact map point, not the entire neighborhood. Party enrollment is registration, not votes cast; attendance zones and enrollment rules are separate. Current officials should be confirmed in official directories.';
   root.append(disclaimer);
   // One card at a time. The phone version stays entirely *inside* the map
   // instead of allowing Leaflet's anchored popup to clip above its top edge.
@@ -452,7 +510,8 @@ function boroughProfile(borough){
 }
 function switchBorough(borough){
   resetMapPointLookup();
-  selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;
+  if(ui['civic-layer'].value==='enrollment')ui['civic-layer'].value='nta';
+  selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;selectedCouncil=null;
   ui.borough.value=borough;ui.neighborhood.value='';
   render();
   const layerName=ui['civic-layer'].value==='boards'?'community boards':'neighborhoods';
@@ -653,6 +712,46 @@ function findSchool(){
   }
   selectSchool(candidates[0]);
 }
+async function loadLegislativeDistricts(){
+  try{
+    const [manifest,official]=await Promise.all([
+      download('data/legislative/validation-2026.json'),
+      download('data/legislative/officials-verified-2026-10-31.json')]);
+    legislativeOfficials=validateOfficialNames(official);
+    const rows=await Promise.all(Object.keys(DISTRICT_KINDS).map(async key=>{
+      const source=await download(DISTRICT_KINDS[key].file);
+      const records=validateDistrictGeoJSON(key,source,manifest);
+      return [key,{records,index:makeDistrictLookup(records)}];
+    }));
+    legislativeLookup=Object.fromEntries(rows);
+    document.getElementById('representation-source').textContent=
+      'Official 2026 DCP Council, Senate, Assembly and congressional polygons verified; City Council and NY Senate officeholder names checked on October 31, 2026.';
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+    if(enrollmentReady){
+      initializeCouncilMap();
+      if(ui['civic-layer'].value==='enrollment')render();
+    }
+  }catch(error){
+    console.warn('Legislative DCP boundary validation unavailable:',error);
+    document.getElementById('representation-source').textContent=
+      'Legislative district source temporarily unavailable. Use the official representative directory links.';
+  }
+}
+async function loadCouncilEnrollment(){
+  try{
+    const data=await download(ENROLLMENT_FILE);
+    councilEnrollment=validateCouncilEnrollment(data);
+    enrollmentReady=true;
+    document.getElementById('party-source').textContent=
+      'Voter party enrollment: NYC Board of Elections Council District Summary Report as of February 20, 2026. Data include active and inactive registrants, and are not election results.';
+    if(legislativeLookup.council)initializeCouncilMap();
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+  }catch(error){
+    console.warn('Official BOE party enrollment unavailable:',error);
+    document.getElementById('party-source').textContent=
+      'BOE party enrollment is unavailable; political party conclusions are not inferred from demographics or election results.';
+  }
+}
 async function loadEducationGeography(){
   let districtsOK=false,schoolsOK=false;
   try{
@@ -686,8 +785,128 @@ async function loadEducationGeography(){
     '; NYSED K–12 school point locations '+(schoolsOK?'verified ('+schoolPoints.length+' records)':'unavailable')+
     '. Administrative boundaries are not attendance zones. Confirm Fall 2026 grades/admissions with NYCPS.';
 }
+function councilStyle(entry){
+  const record=councilEnrollment.get(entry.code);
+  const chosen=ui['political-metric'].value;
+  const streets=ui['map-detail'].value==='streets';
+  const selectedHere=selectedCouncil?.code===entry.code;
+  return {color:'#241039',weight:selectedHere?4:1.5,opacity:1,
+    fillColor:partyFill(record,chosen),
+    fillOpacity:streets?(selectedHere?.65:.57):.93};
+}
+function showCouncilOverview(){
+  ui['profile-kicker'].textContent='NYC BOE 2026 · COUNCIL PARTY ENROLLMENT';
+  ui['detail-name'].textContent='51 City Council Districts';
+  ui['detail-intro'].textContent='Select a City Council district to see registered voters by party. This is district-level enrollment, not neighborhood-level voting or candidate election results.';
+  writeMeta([['Reporting date','February 20, 2026'],['Geography','51 Council districts'],['Voter statuses','Active and inactive reported separately'],['Party classification','Unaffiliated is not a political party']]);
+  document.getElementById('party-profile').hidden=true;
+  updateCivicContext(null);
+}
+function showCouncilProfile(entry){
+  const record=councilEnrollment.get(entry.code);
+  if(!record)return;
+  const active=enrollmentDetails(record,'active');
+  ui['profile-kicker'].textContent='OFFICIAL CITY COUNCIL DISTRICT · NYC BOE';
+  ui['detail-name'].textContent='City Council District '+entry.code;
+  const name=officialForDistrict(legislativeOfficials,'council',entry.code);
+  ui['detail-intro'].textContent='Party enrollment by Council district as of February 20, 2026. The district may span neighborhoods and boroughs; these are registered voters, not votes cast.';
+  writeMeta([['City Council member',name||'Verify NYC Council directory'],
+    ['Active voters',active.total.toLocaleString('en-US')],
+    ['Inactive voters',record.inactive.Total.toLocaleString('en-US')],
+    ['Total enrolled',record.total.Total.toLocaleString('en-US')],
+    ['Largest active enrollment category',active.largest?.name||'Unavailable']]);
+  const profile=document.getElementById('party-profile');
+  const content=document.getElementById('party-profile-content');
+  profile.hidden=false;
+  const list=document.createElement('dl');list.className='party-profile-facts';
+  for(const p of active.parties){
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=p.name;
+    dd.textContent=p.count.toLocaleString('en-US')+' ('+(p.share??0).toFixed(1)+'%)';
+    list.append(dt,dd);
+  }
+  content.replaceChildren(list);
+  updateCivicContext(null);
+}
+function selectCouncilDistrict(entry,latlng){
+  selectedCouncil=entry;
+  selected=null;selectedCommunity=null;selectedSchool=null;selectedSchoolDistrict=null;
+  if(councilLayer)councilLayer.eachLayer(layer=>{
+    const match=legislativeLookup.council.records.find(x=>x.code===Number(layer.feature.properties.district));
+    if(match)layer.setStyle(councilStyle(match));
+  });
+  showCouncilProfile(entry);
+  ui['council-picker'].value=String(entry.code);
+  if(latlng)identifyCommunityAtPoint(latlng);
+  status('City Council District '+entry.code+' · 2026 BOE party enrollment. This is voter registration, not election votes.');
+}
+function initializeCouncilMap(){
+  if(councilLayer||!enrollmentReady||!legislativeLookup.council)return;
+  const entries=legislativeLookup.council.records;
+  if(entries.length!==51||entries.some(x=>!councilEnrollment.has(x.code))){
+    document.getElementById('party-source').textContent='Party enrollment and council polygons could not be matched by district ID.';
+    return;
+  }
+  councilLayer=L.geoJSON(null,{
+    bubblingMouseEvents:false,
+    style:feature=>{
+      const rec=entries.find(x=>x.code===Number(feature.properties.district));
+      return councilStyle(rec);
+    },
+    onEachFeature:(feature,layer)=>{
+      const entry=entries.find(x=>x.code===Number(feature.properties.district));
+      layer.bindTooltip('Council District '+entry.code+' · official 2026 enrollment',{sticky:true});
+      layer.on('click',event=>{
+        if(event.originalEvent)L.DomEvent.stopPropagation(event.originalEvent);
+        selectCouncilDistrict(entry,event.latlng);
+      });
+      layer.on('mouseout',()=>layer.setStyle(councilStyle(entry)));
+    }
+  });
+  councilLayer.addData({type:'FeatureCollection',features:entries.map(x=>x.feature)});
+  const option=ui['civic-layer'].querySelector('[value="enrollment"]');
+  option.disabled=false;
+  ui['political-metric'].disabled=false;
+}
+function updatePartyLegend(){
+  if(!enrollmentReady)return;
+  const container=document.querySelector('.map-key');
+  const data=partyLegend(ui['political-metric'].value);
+  const title=document.createElement('div');
+  title.className='key-title';title.textContent=data.title;
+  container.replaceChildren(title);
+  for(const entry of data.entries){
+    const row=document.createElement('div');row.className='acs-legend-item';
+    const swatch=document.createElement('span');swatch.className='acs-legend-swatch';
+    swatch.style.background=entry.color;
+    const label=document.createElement('span');label.textContent=entry.label;
+    row.append(swatch,label);container.append(row);
+  }
+  const note=document.createElement('p');note.className='acs-legend-note';
+  note.textContent='NYC BOE active voter party enrollment, February 20, 2026. Council district totals, NOT neighborhood votes or election results. Blank=unaffiliated.';
+  container.append(note);
+}
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
+  const enrollmentMode=mode==='enrollment'&&!!councilLayer;
+  ui['political-field'].hidden=!enrollmentMode;
+  ui['political-metric'].disabled=!enrollmentMode;
+  ui['council-picker-field'].hidden=!enrollmentMode;
+  ui['council-picker'].disabled=!enrollmentMode;
+  ui['council-picker'].replaceChildren();
+  const councilPlaceholder=document.createElement('option');
+  councilPlaceholder.value='';councilPlaceholder.textContent='Select a Council district';
+  ui['council-picker'].append(councilPlaceholder);
+  if(enrollmentMode){
+    for(const entry of legislativeLookup.council.records){
+      const option=document.createElement('option');
+      option.value=String(entry.code);option.textContent='Council District '+entry.code;
+      ui['council-picker'].append(option);
+    }
+    if(selectedCouncil)ui['council-picker'].value=String(selectedCouncil.code);
+  }
+  ui.borough.disabled=enrollmentMode;
+  document.getElementById('party-profile').hidden=!enrollmentMode||!selectedCouncil;
   ui['demographic-field'].hidden=mode!=='nta';
   updateACSLegend();
   document.getElementById('acs-profile').hidden=mode!=='nta'||!selected||!acsReady;
@@ -749,7 +968,13 @@ function render(){
     'Return to Neighborhoods to search a 2020 NTA';
 
   // Switch actual polygon layers, without pretending their boundaries coincide.
-  if(boardMode){
+  if(councilLayer&&!enrollmentMode&&map.hasLayer(councilLayer))map.removeLayer(councilLayer);
+  if(enrollmentMode){
+    if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
+    if(communityLayer&&map.hasLayer(communityLayer))map.removeLayer(communityLayer);
+    if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
+    if(!map.hasLayer(councilLayer))councilLayer.addTo(map);
+  }else if(boardMode){
     if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
     if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
     communityLayer.clearLayers();
@@ -769,15 +994,16 @@ function render(){
   if(schoolMode&&schoolMarkers&&!map.hasLayer(schoolMarkers))schoolMarkers.addTo(map);
   if(!schoolMode&&schoolMarkers&&map.hasLayer(schoolMarkers))map.removeLayer(schoolMarkers);
 
-  const total=boardMode?visibleBoards.length:districtMode?schoolDistricts.length:
+  const total=enrollmentMode?51:boardMode?visibleBoards.length:districtMode?schoolDistricts.length:
     schoolMode?visibleSchools.length:visible.length;
   ui['feature-count'].textContent=total.toLocaleString();
-  ui['feature-label'].textContent=boardMode?'community boards in selected borough filter':
+  ui['feature-label'].textContent=enrollmentMode?'City Council districts with official February 2026 BOE party enrollment':
+    boardMode?'community boards in selected borough filter':
     districtMode?'geographic NYC school districts (citywide)':
     schoolMode?'K–12 school location records matching selected filters':
     'NTAs in selected borough filter';
 
-  if(borough==='all'&&!schoolMode&&!districtMode){
+  if(borough==='all'&&!schoolMode&&!districtMode&&!enrollmentMode){
     if(!map.hasLayer(boroughLabels))boroughLabels.addTo(map);
   }else if(map.hasLayer(boroughLabels))map.removeLayer(boroughLabels);
   landmarkLayer.clearLayers();
@@ -808,7 +1034,10 @@ function render(){
   if(selectedCommunity&&!visibleBoards.includes(selectedCommunity))selectedCommunity=null;
   if(selectedSchool&&!visibleSchools.includes(selectedSchool))selectedSchool=null;
 
-  if(boardMode){
+  if(enrollmentMode){
+    selectedCouncil?showCouncilProfile(selectedCouncil):showCouncilOverview();
+    if(!selectedCouncil)fitNYCBounds(councilLayer.getBounds(),{padding:[35,35],animate:false});
+  }else if(boardMode){
     selectedCommunity?boardProfile(selectedCommunity):boardOverview(borough);
     if(visibleBoards.length){
       const target=selectedCommunity?
@@ -848,6 +1077,30 @@ function wire(){
     if(selected)showACSProfile(selected);
     status('Viewing '+ACS_LAYER_OPTIONS[ui['demographic-layer'].value].label+'. Gray areas have missing or unreliable ACS estimates.');
   });
+  ui['council-picker'].addEventListener('change',()=>{
+    if(!councilLayer||!legislativeLookup.council)return;
+    const selectedCode=Number(ui['council-picker'].value);
+    const entry=legislativeLookup.council.records.find(x=>x.code===selectedCode);
+    resetMapPointLookup();
+    if(!entry){
+      selectedCouncil=null;showCouncilOverview();
+      fitNYCBounds(councilLayer.getBounds(),{padding:[35,35],animate:false});
+      return;
+    }
+    selectCouncilDistrict(entry,null);
+    const layer=councilLayer.getLayers().find(x=>Number(x.feature.properties.district)===entry.code);
+    if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[40,40],maxZoom:13,animate:false});}
+  });
+  ui['political-metric'].addEventListener('change',()=>{
+    if(!enrollmentReady||!councilLayer)return;
+    updatePartyLegend();
+    councilLayer.eachLayer(layer=>{
+      const entry=legislativeLookup.council.records.find(x=>x.code===Number(layer.feature.properties.district));
+      if(entry)layer.setStyle(councilStyle(entry));
+    });
+    if(selectedCouncil)showCouncilProfile(selectedCouncil);
+    status('Showing '+PARTY_OPTIONS[ui['political-metric'].value]+'. Source: active registration by City Council district as of February 20, 2026; not votes cast.');
+  });
   ui['community-board'].addEventListener('change',()=>{
     const found=communityByCode.get(Number(ui['community-board'].value));
     if(found)showCommunityBoard(found);
@@ -875,10 +1128,12 @@ function wire(){
   });
   ui['civic-layer'].addEventListener('change',()=>{
     resetMapPointLookup();
-    selected=null;selectedCommunity=null;ui.neighborhood.value='';
-    render();
+    selected=null;selectedCommunity=null;selectedCouncil=null;ui.neighborhood.value='';
     const mode=ui['civic-layer'].value;
-    status(mode==='boards'?'Showing official NYC community boards (2026).':
+    if(mode==='enrollment')ui.borough.value='all';
+    render();
+    status(mode==='enrollment'?'Showing official February 2026 party enrollment by City Council district, not neighborhood election results.':
+      mode==='boards'?'Showing official NYC community boards (2026).':
       mode==='schooldistricts'?'Showing the 32 NYC geographic school districts, not attendance zones.':
       mode==='schools'?'Showing NYSED K–12 school locations. Zoom in for pins or search by school name.':
       'Showing official NYC 2020 Neighborhood Tabulation Areas.');
@@ -925,6 +1180,8 @@ async function init(){
     void loadCommunityGeography();
     void loadEducationGeography();
     void loadACSGeography();
+    void loadLegislativeDistricts();
+    void loadCouncilEnrollment();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }

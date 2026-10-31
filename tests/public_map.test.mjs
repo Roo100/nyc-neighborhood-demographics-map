@@ -38,7 +38,8 @@ test('borough overview retains NTA drilldown and versioned official geography',(
 
 test('only verified and screened ACS measures are enabled; election results remain absent',()=>{
   assert.ok(html.includes('Income, poverty, and race/ethnicity map layers use screened 2020–2024 ACS'));
-  assert.ok(html.includes('Voter registration and election-result layers remain pending'));
+  assert.ok(html.includes('February 2026 official party enrollment is shown by City Council district'));
+  assert.ok(html.includes('Candidate election results and turnout remain separate and unpublished'));
   assert.ok(js.includes("loadACSGeography()"));
   assert.ok(js.includes("ACS_FILE"));
   assert.ok(!js.includes('nta_income_2024.json'));
@@ -62,7 +63,7 @@ test('neighborhood popup is the public primary map interaction without NTA codes
   assert.ok(js.includes('function showCivicPopup(latlng,neighborhood,communityMatch)'));
   assert.ok(js.includes('identifyCommunityAtPoint(event.latlng,r)'));
   assert.ok(js.includes("lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng)"));
-  assert.ok(js.includes("title.textContent=neighborhood?.name||'Selected NYC location'"));
+  assert.ok(js.includes("title.textContent=neighborhood?.name||") && js.includes("'Selected NYC location'"));
   assert.ok(css.includes('.nyc-pop-info-popup .leaflet-popup-content-wrapper'));
   assert.ok(!html.includes('Find neighborhood or NTA code'));
   assert.ok(!js.includes("'2020 NTA code'"));
