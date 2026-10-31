@@ -24,7 +24,7 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
   communityByCode=new Map(), communityLayer=null;
@@ -234,6 +234,7 @@ function showCommunityBoard(board){
     render();
   }else{
     boardProfile(board);
+    ui['community-board'].value=String(board.code);
     communityLayer.eachLayer(layer=>{
       const r=communityByCode.get(parseBoroCd(layer.feature)?.code);
       if(r)layer.setStyle(communityStyle(r));
@@ -279,6 +280,20 @@ function render(){
   geoLayer.clearLayers();
   geoLayer.addData({type:'FeatureCollection',features:visible.map(r=>r.feature)});
   const visibleBoards=communityBoards.filter(board=>borough==='all'||board.borough===borough);
+  ui['board-picker-field'].hidden=!boardMode;
+  ui['community-board'].disabled=!boardMode;
+  ui['community-board'].replaceChildren();
+  const placeholder=document.createElement('option');
+  placeholder.value='';placeholder.textContent='Select a community board';
+  ui['community-board'].append(placeholder);
+  if(boardMode){
+    for(const board of visibleBoards.slice().sort((a,b)=>a.borough.localeCompare(b.borough)||a.number-b.number)){
+      const option=document.createElement('option');
+      option.value=String(board.code);option.textContent=board.name;
+      ui['community-board'].append(option);
+    }
+    if(selectedCommunity)ui['community-board'].value=String(selectedCommunity.code);
+  }
   if(boardMode){
     if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
     communityLayer.clearLayers();
@@ -339,6 +354,10 @@ function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
   ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
+  ui['community-board'].addEventListener('change',()=>{
+    const found=communityByCode.get(Number(ui['community-board'].value));
+    if(found)showCommunityBoard(found);
+  });
   ui['civic-layer'].addEventListener('change',()=>{
     selected=null;selectedCommunity=null;ui.neighborhood.value='';
     render();
