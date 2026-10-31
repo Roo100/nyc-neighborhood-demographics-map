@@ -469,3 +469,28 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .nyc-pop-info-facts dt,.nyc-pop-info-facts dd{font-size:11px}
   .nyc-pop-info-links a{font-size:10px;padding:6px 8px}
 }
+
+
+/* Phone popup is contained within the map rather than clipping above the viewport. */
+.nyc-pop-mobile-overlay{
+  position:absolute;z-index:1300;left:57px;right:9px;top:10px;
+  max-height:calc(100% - 20px);overflow-y:auto;overscroll-behavior:contain;
+  background:#fff;border:3px solid #241039;border-radius:12px;
+  box-shadow:5px 5px 0 #241039;
+}
+.nyc-pop-mobile-overlay .nyc-pop-info-card{padding:13px 11px}
+.nyc-pop-mobile-close{
+  position:sticky;float:right;top:5px;right:6px;z-index:2;
+  width:28px!important;height:28px!important;min-height:28px!important;
+  padding:0!important;margin:5px 5px 0 0;
+  background:#C7FF00!important;color:#241039!important;border:2px solid #241039!important;
+  border-radius:50%!important;line-height:1;font-size:18px;font-weight:900;
+}
+.nyc-pop-mobile-overlay .nyc-pop-info-title{font-size:22px;line-height:1.05}
+.nyc-pop-mobile-overlay .nyc-pop-info-eyebrow{font-size:9px;margin:0 22px 7px 0}
+.nyc-pop-mobile-overlay .nyc-pop-info-facts{grid-template-columns:92px minmax(0,1fr);margin:8px 0}
+.nyc-pop-mobile-overlay .nyc-pop-info-links a{font-size:10px}
+@media(max-width:340px){
+ .nyc-pop-mobile-overlay{left:49px;right:6px}
+ .nyc-pop-mobile-overlay .nyc-pop-info-facts{grid-template-columns:76px minmax(0,1fr)}
+}
