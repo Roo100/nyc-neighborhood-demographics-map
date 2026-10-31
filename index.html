@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=map-controls-20261031-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=acs-2024-review-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=map-controls-20261031-1"></script>
+  <script type="module" src="assets/js/app.js?v=acs-2024-review-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -29,6 +29,19 @@
       </nav>
       <section class="controls" aria-label="Map controls">
         <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option><option value="schooldistricts" disabled>School districts · 2026</option><option value="schools" disabled>K–12 school locations</option></select></div>
+        <div class="field demographic-field" id="demographic-field">
+          <label for="demographic-layer">Neighborhood demographics · ACS 2024</label>
+          <select id="demographic-layer" disabled>
+            <option value="borough" selected>Borough colors</option>
+            <option value="income">Approx. household income</option>
+            <option value="poverty">Poverty rate</option>
+            <option value="race_black">Black non-Hispanic share</option>
+            <option value="race_hispanic">Hispanic / Latino share</option>
+            <option value="race_white">White non-Hispanic share</option>
+            <option value="race_asian">Asian non-Hispanic share</option>
+            <option value="race_other">Other non-Hispanic share</option>
+          </select>
+        </div>
         <div class="field"><label for="borough">Borough</label><select id="borough" disabled><option value="all">All five boroughs</option></select></div>
         <div class="field community-board-field" id="board-picker-field" hidden><label for="community-board">Community board</label><select id="community-board" disabled><option value="">Select a community board</option></select></div>
         <div class="field education-picker-field" id="education-picker-field" hidden>
@@ -60,6 +73,11 @@
           <p class="street-map-note" id="street-map-note" aria-live="polite">Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.</p>
         </div>
         <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl>
+          <section class="acs-profile" id="acs-profile" hidden aria-live="polite">
+            <h3 id="acs-profile-title">2020–2024 ACS neighborhood estimates</h3>
+            <div id="acs-profile-content"></div>
+            <p class="acs-method-note" id="acs-profile-note"></p>
+          </section>
           <section id="point-board-panel" class="point-board-panel" aria-labelledby="point-board-title" aria-live="polite">
             <h3 id="point-board-title"><span aria-hidden="true">📍</span> Community board at map point</h3>
             <p id="point-board-result">Click a street or place on the map to identify its community board from official 2026 boundaries.</p>
@@ -69,7 +87,7 @@
           </section>
           <p id="school-pins-count" class="school-pins-count" aria-live="polite" hidden>Zoom in to see mapped school pins.</p>
         
-        <div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, race and ethnicity, voter registration, and election layers remain unavailable until their source data and geographic alignment pass validation.</p></div><div class="geography-links"><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official 2020 NTAs</a><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/5crt-au7u">Official 2026 community districts</a></div></aside>
+        <div class="data-notice"><strong>Real data. Bold presentation.</strong><p>Income, poverty, and race/ethnicity map layers use screened 2020–2024 ACS five-year tract aggregates, with derived estimates and explicit missing values. Voter registration and election-result layers remain pending official source validation.</p></div><div class="geography-links"><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/9nt8-h7nd">Official 2020 NTAs</a><a class="source-link" target="_blank" rel="noopener noreferrer" href="https://data.cityofnewyork.us/d/5crt-au7u">Official 2026 community districts</a></div></aside>
       <section class="civic-panel" aria-labelledby="civic-panel-title">
           <h3 id="civic-panel-title">Your NYC civic guide</h3>
           <p id="civic-context">Select a borough or community board to see its government context. Legislative districts may cross neighborhoods.</p>
@@ -84,7 +102,8 @@
             <a href="https://www.nyc.gov/main/your-government" target="_blank" rel="noopener noreferrer">NYC elected officials directory</a>
             <a href="https://portal.311.nyc.gov/" target="_blank" rel="noopener noreferrer">NYC 311 services</a>
           </div>
-          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
+          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="acs-source" aria-live="polite">Income, poverty and race/ethnicity are derived from official 2020–2024 ACS five-year census-tract tables and NYC Planning's 2020 NTA crosswalk. Missing or unreliable values are not estimated.</p>
+          <p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
         </section>
       </section>
       <section class="below"><div><strong id="feature-count">—</strong><span id="feature-label">NTAs in selected borough filter</span></div><p>2020 NTA boundaries are statistical reporting areas, not definitive neighborhood definitions. Parks, airports, cemeteries and other special-purpose areas are identified in borough detail view. Sources: NYC Department of City Planning <a href="https://data.cityofnewyork.us/d/9nt8-h7nd">2020 NTAs</a> and <a href="https://data.cityofnewyork.us/d/5crt-au7u">2026 community districts</a>. Districts are different geographies; do not infer electoral representation from NTA alone.</p></section>

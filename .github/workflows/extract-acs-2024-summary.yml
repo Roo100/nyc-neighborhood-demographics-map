@@ -1,0 +1,51 @@
+name: Stream and audit official 2024 ACS 5-year tract tables (research only)
+on:
+  push:
+    branches: [research/acs-2024-source-verification]
+    paths:
+      - scripts/extract_acs_2024_summary.py
+      - .github/workflows/extract-acs-2024-summary.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stream three official Census national tables; retain NYC tracts and MOE only
+        run: python scripts/extract_acs_2024_summary.py
+      - name: Independent existing tract→NTA income and poverty staging
+        run: python scripts/build_income_nta.py
+      - name: Pin only validated source-level staging to research branch
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = "research/acs-2024-source-verification"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/acs/tract_acs_2024_full.csv data/acs/tract_income_2024.csv
+          git add data/acs/summary-file-provenance-2024.json data/acs/nta_income_2024.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage official 2024 five-year ACS tract estimates and MOE plus NTA QA"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin research/acs-2024-source-verification
+              git rebase origin/research/acs-2024-source-verification
+              if git push origin HEAD:research/acs-2024-source-verification; then exit 0; fi
+              sleep 3
+            done
+            exit 1
+          fi
+      - name: Save provenance as short-retention QA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acs-2024-official-source-validation
+          path: data/acs/summary-file-provenance-2024.json
+          if-no-files-found: warn
+          retention-days: 14

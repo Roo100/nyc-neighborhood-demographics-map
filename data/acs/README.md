@@ -1,6 +1,6 @@
-# Income and poverty integration — research protocol (not yet published as map values)
+# ACS income, poverty and racial/ethnic indicators — 2020–2024 five-year sources
 
-**Status:** Data architecture established; no ACS data published or rendered.
+**Status:** Official 2024 ACS tract source and research aggregations verified. Screened 2020 NTA estimates are available to the website through `data/acs/nta_display_2024.json` once the feature PR is merged.
 
 ## Target vintage and geography
 
@@ -51,7 +51,7 @@ Source: https://api.census.gov/data/2024/acs/acs5/groups/B03002.html
 
 ## Publication state
 
-**No actual income values, race/ethnicity values, or election results have been ingested into the website yet.** Their incorporation requires complete validated source data and the next user approval checkpoint.
+**Official 2020–2024 ACS income, poverty, and race/ethnicity source data have now been ingested and quality-screened.** The website can render the derived NTA-level estimates from `nta_display_2024.json`. **No political party registration, election vote totals, turnout, or official published B19013 NTA medians have been added.** Read [ACS_DATA.md](../../ACS_DATA.md) for the precise method and exclusions.
 
 ## Executable income preparation pipeline (added October 31, 2026)
 
@@ -70,4 +70,4 @@ python3 scripts/build_income_nta.py
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Outputs are staged under `data/acs/`; **the website does not currently load them**. The ACS download script never puts a Census API key in output files or source URLs. The builder reports 262 NTA records, flags missing/suppressed values as unavailable, and keeps records in *QA-only* status. No NTA median from grouped data may be labeled as an official Census B19013 median.
+Official Census 2024 five-year **table-based Summary Files** are streamed using `scripts/extract_acs_2024_summary.py`, avoiding the Census API's current `Missing Key` HTML response. Research input and QC files remain in this folder. `scripts/build_acs_nta_2024.py` preserves uncertainty and data quality, and `scripts/export_acs_2024_display.py` creates the **publicly displayable** screened subset: 195 income, 197 poverty and 197 race-category NTA estimates out of 262 polygons. All other values are visibly unavailable, never zeros. No grouped-data NTA income median may be labeled as an official B19013 Census median.

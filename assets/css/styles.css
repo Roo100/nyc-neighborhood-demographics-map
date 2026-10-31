@@ -545,3 +545,25 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   #map .leaflet-control-zoom a{width:38px;height:38px}
   #map .leaflet-control-scale{margin:0 0 16px 10px}
 }
+
+
+/* 2020–2024 ACS five-year derived NTA choropleth; gray is missing/unreliable. */
+.demographic-field select{background:#e8f8ff;font-weight:900;border:2px solid #241039}
+.acs-legend-item{display:flex;gap:8px;align-items:center;line-height:1.35;margin-top:7px;font-size:12px;font-weight:750}
+.acs-legend-swatch{flex:0 0 19px;width:19px;height:19px;display:inline-block;border:2px solid #241039;border-radius:3px}
+.acs-legend-note{margin:11px 0 0;padding-top:9px;border-top:2px solid #241039;max-width:205px;font-size:10px;line-height:1.45;font-weight:700;color:#554b6c}
+.acs-profile{margin:17px 0;padding:15px 14px;background:#f5f0ff;border:3px solid #241039;border-radius:11px;box-shadow:4px 4px 0 #241039}
+.acs-profile h3{font-family:Impact,"Arial Black",system-ui,sans-serif;font-size:19px;text-transform:uppercase;margin:0 0 8px;color:#241039}
+.acs-profile-facts,.acs-popup-facts{display:grid;grid-template-columns:minmax(95px,.8fr) minmax(0,1.2fr);gap:9px 12px;padding:0;margin:14px 0}
+.acs-profile-facts dt,.acs-popup-facts dt{color:#241039;text-align:left;font-size:12px;font-weight:800}
+.acs-profile-facts dd,.acs-popup-facts dd{text-align:left;color:#241039;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.acs-method-note{font-size:11px!important;line-height:1.45!important;color:#483c5c!important}
+.acs-popup-details{border:2px solid #241039;background:#f3faff;border-radius:8px;padding:8px 10px;margin:10px 0}
+.acs-popup-details summary{font-size:12px;font-weight:900;cursor:pointer;color:#241039;list-style-position:inside}
+.acs-popup-details[open] .acs-popup-facts{max-height:160px;overflow-y:auto}
+@media(max-width:600px){
+  .demographic-field{width:100%}
+  .map-key .acs-legend-item{font-size:12px}
+  .map-key .acs-legend-note{grid-column:1/-1;max-width:none}
+  .acs-popup-details[open] .acs-popup-facts{max-height:145px}
+}
