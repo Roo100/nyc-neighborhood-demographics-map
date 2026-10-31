@@ -2,6 +2,15 @@ name: Geographic and ACS pipeline QA
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'tests/**'
+      - 'data/**'
+      - 'scripts/**'
+      - '.github/workflows/qa-data-pipelines.yml'
   push:
     branches: [main]
     paths:
@@ -12,6 +21,10 @@ on:
       - 'tests/nta.test.mjs'
       - 'tests/geography.test.mjs'
       - 'assets/js/nta.js'
+      - 'assets/js/app.js'
+      - 'assets/css/styles.css'
+      - 'index.html'
+      - 'tests/public_map.test.mjs'
 
 permissions:
   contents: read

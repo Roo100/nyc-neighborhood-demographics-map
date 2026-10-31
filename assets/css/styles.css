@@ -1,1 +1,52 @@
 :root{--navy:#12164f;--ink:#1a2038;--muted:#5e6475;--rule:#dedce9;--page:#f5f5f9;--purple:#827ca9}*{box-sizing:border-box}body{margin:0;background:var(--page);font:15px/1.5 Arial,Helvetica,sans-serif;color:var(--ink)}.shell{max-width:1500px;margin:auto;padding:24px}.masthead{background:white;border:1px solid var(--rule);padding:30px 38px 26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--navy)}.eyebrow span{padding:0 9px;color:#aaa}h1{font:normal clamp(2rem,4vw,3.5rem)/1.08 Georgia,serif;color:var(--navy);letter-spacing:-.035em;margin:12px 0}h1 em{font-weight:normal;color:#605885}.masthead p{color:#53566d;max-width:950px;margin:0}.controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:19px 24px;background:#fff;border:1px solid var(--rule);border-top:0}.field{display:flex;flex-direction:column;gap:5px;min-width:180px}.search-field{flex:1;min-width:240px}label{font-size:12px;font-weight:700;color:#42475e}select,input,button{font:inherit;border:1px solid #c7c8d4;border-radius:4px;padding:11px 13px;background:white;min-height:44px}button{cursor:pointer;background:var(--navy);color:white;border-color:var(--navy);font-weight:700}button.secondary{background:white;color:var(--navy)}button:disabled,select:disabled,input:disabled{opacity:.58;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f0ad32;outline-offset:2px}.status{padding:10px 24px;background:#ecedf8;color:var(--navy);font-size:13px;border:1px solid var(--rule);border-top:0}.status.error{background:#fff1ed;color:#9b3029}.workspace{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);min-height:580px;background:white;border:1px solid var(--rule);border-top:0}.map-frame{position:relative;min-width:0;border-right:1px solid var(--rule)}#map{width:100%;height:600px;z-index:0;background:#e5e8ef}.map-key{position:absolute;left:17px;bottom:20px;z-index:500;background:#fffefefa;box-shadow:0 2px 16px #0002;padding:13px 16px;border-radius:5px;font-size:12px;line-height:2}.key-title{font-weight:800;color:var(--navy);margin-bottom:4px}.swatch{width:13px;height:13px;display:inline-block;vertical-align:-2px;margin-right:7px;border-radius:2px}.swatch.residential{background:#827ca9}.swatch.special{background:#c9cbd8}.swatch.active{background:#39437d;border:2px solid #f4b943}.details{padding:31px;align-self:start}.aside-kicker{font-size:11px;letter-spacing:.14em;color:#6c608e;font-weight:800}.details h2{font:normal 30px/1.14 Georgia,serif;color:var(--navy);margin:14px 0}.details p{color:var(--muted)}dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:26px 0}dt{font-size:12px;color:#707386}dd{margin:0;text-align:right;font-weight:700}.data-notice{border:1px solid var(--rule);background:#faf9fd;padding:16px}.data-notice strong{color:var(--navy)}.data-notice p{font-size:13px;margin:7px 0 0}.source-link{display:inline-block;margin-top:20px;color:#332c89;font-weight:700}.below{background:white;border:1px solid var(--rule);border-top:0;padding:18px 28px;display:flex;align-items:center;gap:24px}.below div{display:flex;align-items:baseline;gap:9px;white-space:nowrap}.below strong{font-size:29px;color:var(--navy)}.below span{font-size:12px;color:#6b6d7c}.below p{margin:0;font-size:12px;color:var(--muted)}@media(max-width:900px){.workspace{grid-template-columns:1fr}.map-frame{border-right:0;border-bottom:1px solid var(--rule)}#map{height:480px}.details{padding:25px}.below{display:block}.below div{margin-bottom:8px}}@media(max-width:550px){.shell{padding:8px}.masthead{padding:24px 18px}.controls{padding:16px}.field,button{width:100%}#map{height:450px}.map-key{left:10px;bottom:12px}.details h2{font-size:26px}}
+
+/* Borough-first public atlas: the canvas contains NYC only; no third-party street tiles. */
+:root{--navy:#17334c;--ink:#203749;--muted:#526a79;--rule:#dce5e9;--page:#eef4f6}
+body{font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--page)}
+.shell{max-width:1540px;padding:clamp(8px,2vw,28px)}
+.masthead{background:linear-gradient(120deg,#17334c 0%,#245471 100%);border:0;border-radius:18px 18px 0 0;padding:clamp(26px,4vw,50px)}
+.masthead h1{color:#fff;font-size:clamp(2.2rem,4.8vw,4.4rem);letter-spacing:-.045em}
+.masthead h1 em{color:#a8e1d6}
+.masthead p{color:#e4f2f5;font-size:clamp(14px,1.7vw,17px);max-width:750px}
+.masthead .eyebrow{color:#c3e9e3}
+.borough-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:18px 24px;background:#fff;border-left:1px solid var(--rule);border-right:1px solid var(--rule)}
+.borough-links-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#4b6272;font-weight:800;margin-right:10px}
+.borough-links button{background:#eff4f6;color:#244258;border:1px solid #d2e0e5;border-radius:100px;font-size:13px;font-weight:700;padding:9px 16px;min-height:41px}
+.borough-links button:hover{background:#e1eeee}
+.borough-links button.active{background:#17334c;border-color:#17334c;color:#fff}
+.controls{border-top:1px solid var(--rule);padding-block:15px}
+.controls button{background:#17334c;border-color:#17334c}
+.controls button.secondary{background:white;color:#17334c;border-color:#c7d8df}
+.status{background:#e4f0f3;color:#24475b}
+.workspace{grid-template-columns:minmax(0,2.35fr) minmax(290px,.9fr);min-height:640px}
+.map-frame{background:#e7f1f5}
+#map,.leaflet-container{background:#e7f1f5}
+#map{height:640px}
+.map-key{left:18px;bottom:18px;border:1px solid #d4e2e9;border-radius:12px;box-shadow:0 8px 24px #17334c18;line-height:1.8;max-width:180px}
+.map-key .key-title{font-size:12px}
+.map-key .key-note{border-top:1px solid #e1e8eb;margin-top:6px;padding-top:6px;color:#5f7480;font-size:11px;line-height:1.3}
+.swatch.bronx{background:#8bc9bc}.swatch.brooklyn{background:#edbc84}.swatch.manhattan{background:#a8bee9}.swatch.queens{background:#c6b2e2}.swatch.staten{background:#e8a9af}
+.borough-label{background:transparent;border:0;white-space:nowrap}
+.borough-label span{display:flex;align-items:center;justify-content:center;width:146px;height:42px;background:#ffffffed;color:#17334c;border:1px solid #c3d5df;border-radius:100px;box-shadow:0 4px 12px #17334c26;font-size:14px;letter-spacing:.01em;font-weight:800;cursor:pointer;transition:background .15s,transform .15s}
+.borough-label:hover span{background:#fff;transform:scale(1.04)}
+.leaflet-marker-icon:focus-visible{outline:3px solid #bd6d08;outline-offset:3px}
+.leaflet-control-zoom a{color:#17334c}
+.details{padding:clamp(22px,2.5vw,40px)}
+.details h2{font:normal clamp(25px,2.4vw,35px)/1.13 Georgia,serif}
+.data-notice{background:#f3f7f8;border-radius:10px;border-color:#dce6ea}
+.below{background:#fff;border-radius:0 0 14px 14px}
+@media(max-width:900px){
+ .workspace{grid-template-columns:1fr;min-height:0}
+ #map{height:540px}
+ .borough-links{padding:14px 16px}
+ .borough-links-label{width:100%}
+}
+@media(max-width:600px){
+ .masthead{border-radius:12px 12px 0 0}
+ .borough-links{gap:6px}
+ .borough-links button{font-size:12px;min-height:38px;padding:8px 11px}
+ #map{height:480px}
+ .borough-label{display:none}
+ .map-key{bottom:10px;left:10px;padding:8px 10px;max-width:145px;font-size:11px}
+ .details{padding:22px}
+}
