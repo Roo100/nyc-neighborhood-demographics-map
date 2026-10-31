@@ -295,12 +295,52 @@ async function checkViewport(label, viewport) {
   assert.equal(await page.locator('#school-search-field').isVisible(),false);
   await page.locator('#reset').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
+  // City Council voter enrollment is official NYC BOE 2026 Council geography.
+  await page.waitForFunction(()=>{
+    const source=document.getElementById('representation-source')?.textContent||'';
+    const party=document.getElementById('party-source')?.textContent||'';
+    const control=document.querySelector('#civic-layer option[value="enrollment"]');
+    return source.includes('Official 2026 DCP')&&
+      party.includes('February 20, 2026')&&control&&!control.disabled;
+  },null,{timeout:65000});
+  await page.locator('#civic-layer').selectOption('enrollment');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent.trim()==='51');
+  assert.equal(await page.locator('#council-picker-field').isVisible(),true);
+  assert.equal(await page.locator('#council-picker option').count(),52);
+  assert.equal(await page.locator('#borough').isDisabled(),true,
+    'Do not present Council party enrollment as a borough or NTA aggregate');
+  assert.ok((await page.locator('.map-key').textContent()).includes('Democratic enrollment share'));
+  assert.ok((await page.locator('#detail-intro').textContent()).includes('not neighborhood-level voting'));
+  await page.locator('#council-picker').selectOption('51');
+  await page.locator('#detail-name').filter({hasText:'City Council District 51'}).waitFor();
+  assert.ok((await page.locator('#detail-meta').textContent()).includes('Republican'),
+    'Council District 51 must reflect official party enrollment, not a guessed party majority');
+  assert.equal(await page.locator('#party-profile').isVisible(),true);
+  await page.locator('#political-metric').selectOption('republican');
+  assert.ok((await page.locator('.map-key').textContent()).includes('Republican enrollment share'));
+  await page.locator('#identify-board-center').click();
+  const partyPopup=label==='mobile'?'.nyc-pop-mobile-overlay':'.nyc-pop-info-popup:visible';
+  await page.locator(partyPopup+' .nyc-pop-info-title').last().waitFor();
+  const politicalText=await page.locator(partyPopup).last().textContent();
+  assert.ok(politicalText.includes('City Council District 51'));
+  assert.ok(politicalText.includes('City Council representative'));
+  assert.ok(politicalText.includes('NY State Senate'));
+  assert.ok(politicalText.includes('Registered voters'));
+  assert.ok(politicalText.includes('Council District'));
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-boe-council-enrollment.png',fullPage:true});
+  if(label==='mobile')await page.locator('.nyc-pop-mobile-overlay .nyc-pop-mobile-close').click();
+  else await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
+    .evaluate(node=>node.click());
+  await page.locator('#civic-layer').selectOption('nta');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent.trim()==='262');
+  assert.equal(await page.locator('#political-field').isVisible(),false);
+  assert.equal(await page.locator('#borough').isEnabled(),true);
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
-    mapGridBoardLookup:true,acs2024LayersVerified:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    mapGridBoardLookup:true,acs2024LayersVerified:true,officialCouncilEnrollment:true,legislativeDistricts:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
     exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }
