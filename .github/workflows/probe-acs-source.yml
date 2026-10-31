@@ -1,0 +1,19 @@
+name: Research 2024 ACS source endpoints (no publication)
+on:
+  push:
+    branches: [research/acs-2024-source-verification]
+    paths: [scripts/probe_acs_source_2024.py, .github/workflows/probe-acs-source.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect five official ACS source endpoints
+        run: python scripts/probe_acs_source_2024.py
