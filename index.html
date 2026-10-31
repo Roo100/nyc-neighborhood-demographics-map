@@ -6,7 +6,7 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=primary-2026-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=nov-ballot-2026-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="assets/js/app.js?v=primary-2026-1"></script>
 </head>
@@ -130,41 +130,44 @@
           <p class="civic-date-note" id="acs-source" aria-live="polite">Income, poverty and race/ethnicity are derived from official 2020–2024 ACS five-year census-tract tables and NYC Planning's 2020 NTA crosswalk. Missing or unreliable values are not estimated.</p>
           <p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
         </section>
-        <details class="mayor-election-2025" id="recent-election-2026" open>
-          <summary>
-            <span class="mayor-election-kicker">MOST RECENT COMPLETED NYC ELECTION · JUNE 23, 2026</span>
-            <strong>2026 Primary Election Results</strong>
-            <span class="mayor-election-hint">Official certified primary results. The November 3, 2026 general election is upcoming; its results are not yet available.</span>
-          </summary>
-          <div class="mayor-election-inner">
-            <p class="mayor-election-citywide"><strong>Featured citywide contest:</strong> Democratic primary for New York State Comptroller, June 23, 2026. These are votes cast in New York City's five boroughs, not statewide totals, general-election votes, party registration, or neighborhood-level estimates.</p>
-            <p class="mayor-election-kicker">NYC Board of Elections · certified July 14, 2026</p>
-            <div class="mayor-election-totals">
-              <div><strong>597,863</strong><span>Ballots cast (NYC)</span></div>
-              <div><strong>550,863</strong><span>Recorded votes in contest</span></div>
-              <div><strong>44,916</strong><span>Unrecorded applicable ballots</span></div>
-            </div>
-            <div id="primary-2026-results" aria-label="Certified 2026 citywide Democratic State Comptroller primary results">
-              <table class="mayor-election-table">
-                <caption>Democratic State Comptroller primary — NYC's five boroughs combined</caption>
-                <thead><tr><th scope="col">Candidate</th><th scope="col">Vote distribution</th><th scope="col">Votes</th><th scope="col">Share</th></tr></thead>
-                <tbody>
-                  <tr><th scope="row">Thomas P. DiNapoli</th><td><div class="mayor-vote-track"><span class="mayor-vote-bar" style="width:58.64%"></span></div></td><td>323,008</td><td>58.64%</td></tr>
-                  <tr><th scope="row">Drew Warshaw</th><td><div class="mayor-vote-track"><span class="mayor-vote-bar" style="width:24.44%"></span></div></td><td>134,616</td><td>24.44%</td></tr>
-                  <tr><th scope="row">Raj Goyle</th><td><div class="mayor-vote-track"><span class="mayor-vote-bar" style="width:16.36%"></span></div></td><td>90,111</td><td>16.36%</td></tr>
-                  <tr><th scope="row">Write-in votes (combined)</th><td><div class="mayor-vote-track"><span class="mayor-vote-bar" style="width:0.57%"></span></div></td><td>3,128</td><td>0.57%</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="mayor-election-source">Source: <a href="https://vote.nyc/sites/default/files/pdf/election_results/2026/20260623Primary%20Election/01000600000Citywide%20Democratic%20State%20Comptroller%20Citywide%20Recap.pdf" target="_blank" rel="noopener noreferrer">NYC BOE certified citywide primary recap (PDF, pages 31 and 54)</a>. Shares use 550,863 recorded votes as the denominator; minor rounding may occur. Of 597,863 ballots cast, 2,084 federal ballots were inapplicable to this contest, leaving 595,779 applicable ballots.</p>
-            <div class="recent-election-other">
-              <strong>All other June 2026 primary contests</strong>
-              <p>Explore official congressional, State Senate, Assembly, judicial, party committee, and local district results by borough and contest. These election outcomes are not assigned to neighborhoods without verified election-district boundary matching.</p>
-              <a href="https://www.vote.nyc/page/election-results-summary" target="_blank" rel="noopener noreferrer">Browse all NYC BOE June 23, 2026 primary results</a>
-              <a href="https://elections.ny.gov/election-results" target="_blank" rel="noopener noreferrer">New York State Board of Elections certified 2026 primary results</a>
-            </div>
-          </div>
-        </details>
+        <details class="mayor-election-2025" id="november-ballot-2026" open>
+  <summary>
+    <span class="mayor-election-kicker">NYC GENERAL ELECTION · NOVEMBER 3, 2026</span>
+    <strong>What's on the November Ballot?</strong>
+    <span class="mayor-election-hint">Official election guide · Early voting October 24–November 1 · Election Day polls 6 AM–9 PM</span>
+  </summary>
+  <div class="mayor-election-inner">
+    <p class="mayor-election-citywide"><strong>Ballot information, not results.</strong> The November 3 general election has not taken place. Actual candidates, judicial races, and districts vary by registered address. Check an official sample ballot before voting.</p>
+    <div class="nov-ballot-columns">
+      <section>
+        <h3>Statewide offices</h3>
+        <ul><li>Governor and Lieutenant Governor</li><li>New York State Comptroller</li><li>New York State Attorney General</li></ul>
+      </section>
+      <section>
+        <h3>District and judicial contests</h3>
+        <ul><li>U.S. House of Representatives</li><li>New York State Senate</li><li>New York State Assembly</li><li>NYC City Council — District 3 only</li><li>Supreme Court and other judicial seats, where applicable</li></ul>
+      </section>
+    </div>
+    <section class="nov-ballot-proposals" aria-label="2026 NYC City Charter ballot proposals">
+      <h3>Five NYC Charter ballot proposals</h3>
+      <ol>
+        <li><strong>Public space permissions:</strong> Change reviews for sidewalk cafes and other uses of public space.</li>
+        <li><strong>City contracting:</strong> Simplify contractor paperwork and adjust Procurement Policy Board requirements.</li>
+        <li><strong>Street safety and city property:</strong> Change review procedures for street projects, city property and office leasing.</li>
+        <li><strong>Building and waterfront permits:</strong> Centralize construction permitting and change waterfront permitting responsibilities.</li>
+        <li><strong>Rainy day reserves:</strong> Establish targets and a methodology for city budget reserves.</li>
+      </ol>
+      <p>These are neutral summaries, not the complete legal ballot text. Read the official Yes/No explanations for each proposal.</p>
+      <a href="https://www.nycvotes.org/whats-on-the-ballot/2026-ballot-proposals" target="_blank" rel="noopener noreferrer">Read all five proposals and Yes/No explanations</a>
+    </section>
+    <nav class="nov-ballot-links" aria-label="Official November 2026 voting resources">
+      <a href="https://www.nycvotes.org/whats-on-the-ballot/2026-general-election-voter-guide" target="_blank" rel="noopener noreferrer">Find candidates by your registered address</a>
+      <a href="https://www.nycvotes.org/whats-on-the-ballot/2026-general-election-voter-guide/2026-races-general-election-voter-guide-nyc-votes/" target="_blank" rel="noopener noreferrer">Browse 2026 races by district</a>
+      <a href="https://www.vote.nyc/election/general-election-2026" target="_blank" rel="noopener noreferrer">NYC Board of Elections: dates and poll site</a>
+    </nav>
+    <p class="mayor-election-source">Sources: NYC Campaign Finance Board/NYC Votes and NYC Board of Elections; checked October 31, 2026. This section does not display November 2026 vote totals or declare election outcomes. The separate party-enrollment map layer reflects February 2026 registration, not November voting.</p>
+  </div>
+</details>
       </section>
       <section class="below"><div><strong id="feature-count">—</strong><span id="feature-label">NTAs in selected borough filter</span></div><p>2020 NTA boundaries are statistical reporting areas, not definitive neighborhood definitions. Parks, airports, cemeteries and other special-purpose areas are identified in borough detail view. Sources: NYC Department of City Planning <a href="https://data.cityofnewyork.us/d/9nt8-h7nd">2020 NTAs</a> and <a href="https://data.cityofnewyork.us/d/5crt-au7u">2026 community districts</a>. Districts are different geographies; do not infer electoral representation from NTA alone.</p></section>
     </main>
