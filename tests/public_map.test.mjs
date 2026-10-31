@@ -36,8 +36,11 @@ test('borough overview retains NTA drilldown and versioned official geography',(
   assert.ok(js.includes("BOROUGH_COLORS"));
 });
 
-test('unverified income and political measures remain absent',()=>{
-  assert.ok(html.includes('remain unavailable until their source data and geographic alignment pass validation'));
+test('only verified and screened ACS measures are enabled; election results remain absent',()=>{
+  assert.ok(html.includes('Income, poverty, and race/ethnicity map layers use screened 2020–2024 ACS'));
+  assert.ok(html.includes('Voter registration and election-result layers remain pending'));
+  assert.ok(js.includes("loadACSGeography()"));
+  assert.ok(js.includes("ACS_FILE"));
   assert.ok(!js.includes('nta_income_2024.json'));
   assert.ok(!js.includes('election_results'));
 });
