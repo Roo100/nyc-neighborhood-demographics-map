@@ -1,0 +1,49 @@
+name: Pin official NYC legislative districts — 2026 26b
+on:
+  push:
+    branches: [feature/verified-legislative-districts]
+    paths:
+      - scripts/fetch_legislative_districts.py
+      - .github/workflows/pin-legislative-districts.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pin-legislative:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch and validate four official DCP district datasets
+        run: python scripts/fetch_legislative_districts.py
+      - name: Commit verified-only data to research branch
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = "feature/verified-legislative-districts"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/legislative
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin validated DCP 2026 legislative polygons"
+            for attempt in 1 2 3 4 5 6; do
+              git fetch origin feature/verified-legislative-districts
+              git rebase origin/feature/verified-legislative-districts
+              if git push origin HEAD:feature/verified-legislative-districts; then exit 0; fi
+              sleep 3
+            done
+            echo "Unable to safely commit after six non-force retries" >&2
+            exit 1
+          fi
+      - name: Archive GIS validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legislative-2026-source-validation
+          path: data/legislative/validation-2026.json
+          if-no-files-found: warn
+          retention-days: 14
