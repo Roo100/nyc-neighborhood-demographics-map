@@ -23,7 +23,7 @@ async function checkViewport(label, viewport) {
       stroke="#fff" stroke-width="8" fill="none"/>
     </svg>`
   }));
-  await page.goto(BASE_URL+'?qa=1', {waitUntil:'domcontentloaded',timeout:45000});
+  await page.goto(BASE_URL, {waitUntil:'domcontentloaded',timeout:45000});
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262',null,{timeout:45000});
   await page.locator('#status').filter({hasText:/Loaded 262 official 2020 NTA polygons/}).waitFor({timeout:45000});
   const title = await page.title();
@@ -60,44 +60,6 @@ async function checkViewport(label, viewport) {
     assert.equal(manhattanClear,0,'Manhattan landmark area must reveal the street grid through matte');
   }
   assert.ok(await page.locator('#map .leaflet-control-attribution').count()===1,'Street source attribution remains visible');
-  if(label==='desktop'){
-    const debug=await page.evaluate(()=>{
-      const get=(selector)=>{
-        const x=document.querySelector(selector);
-        if(!x)return null;
-        const r=x.getBoundingClientRect(),style=getComputedStyle(x);
-        return {left:r.left,top:r.top,width:r.width,height:r.height,zIndex:style.zIndex,position:style.position,display:style.display,opacity:style.opacity};
-      };
-      const tiles=[...document.querySelectorAll('.leaflet-tile')];
-      const matte=document.querySelector('canvas.city-matte-canvas');
-      const alpha=matte.getContext('2d').getImageData(10,10,1,1).data[3];
-      return {map:get('#map'),mapPane:get('.leaflet-map-pane'),tiles:get('.leaflet-tile-pane'),maskPane:get('.leaflet-cityMask-pane'),maskCanvas:get('canvas.city-matte-canvas'),alphaTopLeft:alpha,tilesComplete:tiles.filter(x=>x.complete&&x.naturalWidth>0).length,tilesAll:tiles.length};
-    });
-    console.log('STREET_LAYER_DEBUG '+JSON.stringify(debug));
-    const state=await page.evaluate(()=>{
-      const {map,geoLayer,streetTiles,outsideCityMask}=window.__atlasQA;
-      const matte=document.querySelector('.city-matte-canvas');
-      const ctx=matte.getContext('2d');
-      const mapBox=map.getContainer().getBoundingClientRect();
-      const canvasBox=matte.getBoundingClientRect();
-      const sample=(coords)=>{
-        const p=map.latLngToContainerPoint(coords);
-        const px=Math.max(0,Math.min(matte.width-1,Math.round(p.x)));
-        const py=Math.max(0,Math.min(matte.height-1,Math.round(p.y)));
-        return {mapXY:[p.x,p.y],canvasXY:[px,py],alpha:ctx.getImageData(px,py,1,1).data[3]};
-      };
-      const layers=geoLayer.getLayers();
-      return {
-        geoSize:layers.length,
-        sampleStyle:layers.slice(0,3).map(x=>({name:x.feature.properties.ntaname,opacity:x.options.fillOpacity,color:x.options.fillColor})),
-        nyc:{bronx:sample([40.852,-73.876]),manhattan:sample([40.787,-73.968]),queens:sample([40.733,-73.798]),staten:sample([40.579,-74.145])},
-        mattePosition:[canvasBox.left-mapBox.left,canvasBox.top-mapBox.top],
-        tileLayerExists:map.hasLayer(streetTiles),
-        matteLayerExists:map.hasLayer(outsideCityMask)
-      };
-    });
-    console.log('STREET_LAYER_STATE '+JSON.stringify(state));
-  }
   await page.locator('#map-detail').selectOption('comic');
   await page.waitForFunction(()=>document.querySelectorAll('.leaflet-tile').length===0);
   await page.locator('#map-detail').selectOption('streets');
