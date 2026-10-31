@@ -89,6 +89,11 @@ async function checkViewport(label, viewport) {
   await page.locator('#search-button').click();
   await page.locator('#detail-name').filter({hasText:'Longwood'}).waitFor();
   assert.equal(await page.locator('#detail-meta').textContent().then(text=>text.includes('BX0202')),true);
+  await page.waitForFunction(()=>document.querySelector('#civic-source')?.textContent.includes('59 boards'));
+  await page.locator('#identify-board-center').click();
+  await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
+    document.querySelector('#point-board-panel')?.dataset.lookupStatus));
+  assert.equal(await page.locator('#detail-name').textContent(),'Longwood','NTA profile must survive independent map point board lookup');
   await page.waitForTimeout(600);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
@@ -173,6 +178,11 @@ async function checkViewport(label, viewport) {
   await page.locator('#school-find').click();
   await page.locator('#detail-name').filter({hasText:bronxPublicSchool.properties.name}).waitFor();
   assert.ok((await page.locator('#detail-meta').textContent()).includes('Grade span'));
+  await page.locator('#identify-board-center').click();
+  await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
+    document.querySelector('#point-board-panel')?.dataset.lookupStatus));
+  assert.equal(await page.locator('#detail-name').textContent(),bronxPublicSchool.properties.name,
+    'School profile must survive independent map point community board lookup');
   await page.waitForFunction(()=>{
     const text=document.getElementById('school-pins-count')?.textContent||'';
     return /^[1-9][0-9]* school pins visible/.test(text);
