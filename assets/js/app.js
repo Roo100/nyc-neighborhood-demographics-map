@@ -8,7 +8,19 @@ function status(message,error=false){ui.status.textContent=message;ui.status.cla
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
   map=L.map('map',{zoomControl:true,scrollWheelZoom:true}).fitBounds(NYC_BOUNDS);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap contributors &copy; CARTO',maxZoom:19}).addTo(map);
+  // OpenStreetMap Standard does not require a commercial API key. See https://operations.osmfoundation.org/policies/tiles/
+  // Keep the boundary vectors usable even if the background tile provider is unavailable.
+  const basemap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom:19
+  }).addTo(map);
+  let tileErrors = 0;
+  basemap.on('tileerror', () => {
+    if (++tileErrors === 4) {
+      map.removeLayer(basemap);
+      status('Background map tiles are unavailable. Official neighborhood polygons remain interactive on the plain map.', true);
+    }
+  });
 }
 async function download(url){const response=await fetch(url);if(!response.ok) throw new Error(`HTTP ${response.status}`);return response.json();}
 async function loadGeography(){
