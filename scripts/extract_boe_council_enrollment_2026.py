@@ -64,19 +64,35 @@ def parse_report(binary):
     totals=defaultdict(lambda:{"active":[0]*7,"inactive":[0]*7,"total":[0]*7})
     parts=Counter()
     first={}
+    continuation_pages=[]
+    skip=set()
     for index,page in enumerate(reader.pages):
+        if index in skip:continue
         text=page.extract_text(extraction_mode="layout")
         if not text or "2026" not in text:
             raise ValueError("Missing February 2026 report heading")
-        district,values=extract_section(text,index)
+        try:
+            district,values=extract_section(text,index)
+        except ValueError as exc:
+            # Council 24's subtotal label appears at the bottom of PDF page 43,
+            # but its active/inactive/total numbers continue onto page 44.
+            # Merge only a verified adjacent continuation, never drop the data.
+            if "Could not parse" not in str(exc) or index+1>=len(reader.pages):
+                raise
+            next_text=reader.pages[index+1].extract_text(extraction_mode="layout")
+            if "Totals for Council" in next_text:
+                raise ValueError("Ambiguous consecutive Council subtotal headings") from exc
+            district,values=extract_section(text+"\n"+next_text,index)
+            continuation_pages.append(index+2)
+            skip.add(index+1)
         parts[district]+=1
         first.setdefault(district,index+1)
         for status,cols in values.items():
             totals[district][status]=[a+b for a,b in zip(totals[district][status],cols)]
     if set(totals)!=set(range(1,52)):
         raise ValueError("Source does not include each of NYC's 51 City Council districts: "+str(sorted(totals)))
-    if sum(parts.values())!=56:
-        raise ValueError("Missing district/county page fragments")
+    if sum(parts.values())+len(skip)!=56 or sorted(continuation_pages)!=[44]:
+        raise ValueError("PDF page coverage or expected council continuation inconsistent")
     processed=[]
     for district in sorted(totals):
         row={"district":district,"parts":parts[district],"first_pdf_page":first[district]}
@@ -104,6 +120,8 @@ def main():
       "source_url":URL,
       "pdf_sha256":sha256(binary).hexdigest(),
       "pdf_pages":56,
+      "pdf_continuation_pages":[44],
+      "raw_district_county_sections":55,
       "report_geo":"NYC City Council District (51 districts) with cross-borough PDF sections summed per district",
       "category_labels":COLUMNS,
       "active_inactive_note":"Active and inactive voter enrollment shown separately; total includes both. Unaffiliated/Blank is not a political party.",
@@ -115,7 +133,7 @@ def main():
     out=OUT/"council_enrollment_2026.json"
     out.write_text(json.dumps(data,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8")
     print("BOE_ENROLLMENT_VALIDATED",json.dumps({
-      "districts":len(rows),"page_parts":sum(parts.values()),
+      "districts":len(rows),"district_county_sections":sum(parts.values()),"pdf_pages":56,
       "cross_borough":data["cross_borough_districts"],
       "city_total":sum(r["total"]["Total"] for r in rows),
       "city_active":sum(r["active"]["Total"] for r in rows),
