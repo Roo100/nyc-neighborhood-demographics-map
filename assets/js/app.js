@@ -597,7 +597,7 @@ function render(){
   }
   ui.neighborhood.disabled=mode!=='nta';
   ui['search-button'].disabled=mode!=='nta';
-  ui.neighborhood.placeholder=mode==='nta'?'Search e.g. Harlem, Astoria, BX0101':
+  ui.neighborhood.placeholder=mode==='nta'?'Search e.g. Harlem, Astoria, Longwood':
     'Return to Neighborhoods to search a 2020 NTA';
 
   // Switch actual polygon layers, without pretending their boundaries coincide.
