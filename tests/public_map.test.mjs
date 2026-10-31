@@ -30,7 +30,7 @@ test('borough overview retains NTA drilldown and versioned official geography',(
 });
 
 test('unverified income and political measures remain absent',()=>{
-  assert.ok(html.includes('after geographic alignment and source checks'));
+  assert.ok(html.includes('remain unavailable until their source data and geographic alignment pass validation'));
   assert.ok(!js.includes('nta_income_2024.json'));
   assert.ok(!js.includes('election_results'));
 });
