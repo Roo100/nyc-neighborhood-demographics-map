@@ -91,23 +91,31 @@ async function checkViewport(label, viewport) {
   assert.ok(!(await page.locator('#detail-meta').textContent()).includes('BX0202'),'NTA identifiers should not be visible in neighborhood profiles');
   assert.equal(await page.locator('#neighborhood').getAttribute('placeholder'),'Search e.g. Harlem, Astoria, Longwood');
   await page.waitForFunction(()=>document.querySelector('#civic-source')?.textContent.includes('59 boards'));
-  await page.locator('#identify-board-center').click();
-  await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
-    document.querySelector('#point-board-panel')?.dataset.lookupStatus));
-  assert.equal(await page.locator('#detail-name').textContent(),'Longwood','NTA profile must survive independent map point board lookup');
-  await page.locator('.nyc-pop-info-popup .nyc-pop-info-title').waitFor();
-  const firstPopup=await page.locator('.nyc-pop-info-card').textContent();
-  assert.ok(firstPopup.includes('Community board'));
-  assert.ok(firstPopup.includes('School district'));
-  assert.ok(!firstPopup.includes('BX0202'),'No internal NTA code in public popup');
-  // The clicked neighborhood should have its own immediate on-map popup.
-  await page.locator('.nyc-pop-info-popup .leaflet-popup-close-button').click();
+  // Search centers the Longwood NTA. Click its map polygon, not a menu or the
+  // side profile. Its popup must lead with the neighborhood name.
+  await page.waitForTimeout(350);
   const neighborhoodMapBox=await page.locator('#map').boundingBox();
   await page.locator('#map').click({position:{
     x:Math.round(neighborhoodMapBox.width/2),y:Math.round(neighborhoodMapBox.height/2)
   }});
-  await page.locator('.nyc-pop-info-popup .nyc-pop-info-title').waitFor();
-  assert.ok(!(await page.locator('.nyc-pop-info-card').textContent()).includes('BX0202'));
+  await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().waitFor();
+  const heading=await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().textContent();
+  assert.equal(heading,'Longwood','Map click should identify selected neighborhood rather than a generic grid location');
+  const firstPopup=await page.locator('.nyc-pop-info-card:visible').last().textContent();
+  assert.ok(firstPopup.includes('Community board'));
+  assert.ok(firstPopup.includes('School district'));
+  assert.ok(firstPopup.includes('Borough president'));
+  assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
+  assert.equal(await page.locator('#detail-name').textContent(),'Longwood');
+  // Close the popup using the exposed accessible close control. Avoid relying
+  // on pixel geometry if test zoom/scroll has positioned the control at edge.
+  await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
+    .evaluate(node=>node.click());
+  await page.locator('#identify-board-center').click();
+  await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
+    document.querySelector('#point-board-panel')?.dataset.lookupStatus));
+  assert.equal(await page.locator('#detail-name').textContent(),'Longwood',
+    'Neighborhood profile remains available beside the street-grid lookup');
   await page.waitForTimeout(600);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
@@ -142,8 +150,9 @@ async function checkViewport(label, viewport) {
     document.querySelector('#point-board-panel')?.dataset.lookupStatus),null,{timeout:15000});
   assert.ok((await page.locator('#point-board-coordinates').textContent()).includes('Selected map point:'));
   assert.ok(await page.locator('.grid-map-click-marker').count()===1);
-  assert.equal(await page.locator('.nyc-pop-info-popup').count(),1);
-  await page.locator('.nyc-pop-info-popup .leaflet-popup-close-button').click();
+  assert.equal(await page.locator('.nyc-pop-info-popup:visible').count(),1);
+  await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
+    .evaluate(node=>node.click());
   // The point can also be selected by clicking the map grid directly.
   const mapBoxForClick=await page.locator('#map').boundingBox();
   await page.locator('#map').click({position:{x:Math.round(mapBoxForClick.width/2),y:Math.round(mapBoxForClick.height/2)}});
