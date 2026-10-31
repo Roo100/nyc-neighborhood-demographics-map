@@ -32,9 +32,16 @@ jobs:
           git add data/schools/school-districts-2026.geojson data/schools/k12-schools-nysed.geojson data/schools/validation-2026.json
           if ! git diff --cached --quiet; then
             git commit -m "Pin official school district and K-12 point datasets"
-            git fetch origin feature/nyc-civic-community-boards
-            git rebase origin/feature/nyc-civic-community-boards
-            git push origin HEAD:feature/nyc-civic-community-boards
+            for attempt in 1 2 3 4 5 6; do
+              git fetch origin feature/nyc-civic-community-boards
+              git rebase origin/feature/nyc-civic-community-boards
+              if git push origin HEAD:feature/nyc-civic-community-boards; then
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Failed to safely pin validated school dataset after six non-force retries" >&2
+            exit 1
           fi
       - name: Archive evidence
         if: always()
