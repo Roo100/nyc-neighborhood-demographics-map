@@ -359,3 +359,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   margin:15px 0 0;padding:10px 12px;border:2px solid #241039;
   background:#dcfaff;color:#241039;font-size:13px;font-weight:800;border-radius:8px;
 }
+
+
+/* Long map-layer descriptions must wrap rather than widen narrow phones. */
+.below div{white-space:normal;flex-wrap:wrap;max-width:100%}
+.below span{overflow-wrap:anywhere;min-width:0}
+.details dd,.details h2{overflow-wrap:anywhere}
