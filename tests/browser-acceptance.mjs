@@ -91,10 +91,41 @@ async function checkViewport(label, viewport) {
   await page.locator('#reset').click();
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
   assert.equal(await page.locator('.comic-landmark').count(),5);
+  // Community boards load independently from the pinned official May 2026 file.
+  await page.waitForFunction(()=>{
+    const x=document.getElementById('civic-layer');
+    return x && !x.disabled && !x.querySelector('[value="boards"]').disabled;
+  },null,{timeout:45000});
+  assert.ok((await page.locator('#civic-source').textContent()).includes('59 boards'));
+  await page.locator('#civic-layer').selectOption('boards');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='59');
+  assert.equal(await page.locator('#feature-label').textContent(),'community boards in selected borough filter');
+  assert.equal(await page.locator('#board-picker-field').isVisible(),true);
+  assert.equal(await page.locator('#community-board option').count(),60); // 59 + placeholder
+  assert.equal(await page.locator('#detail-name').textContent(),'NYC Community Boards');
+  assert.ok((await page.locator('#civic-context').textContent()).includes('59 community boards'));
+  await page.locator('[data-borough="Bronx"]').click();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='12');
+  assert.equal(await page.locator('#borough-president').textContent(),'Vanessa L. Gibson');
+  assert.equal(await page.locator('#community-board option').count(),13);
+  await page.locator('#community-board').selectOption('201');
+  await page.locator('#detail-name').filter({hasText:'Bronx Community Board 1'}).waitFor();
+  assert.ok((await page.locator('#detail-meta').textContent()).includes('201'));
+  await page.waitForTimeout(500);
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-community-board.png',fullPage:true});
+  await page.locator('[data-borough="Queens"]').click();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='14');
+  assert.equal(await page.locator('#borough-president').textContent(),'Donovan Richards');
+  await page.locator('#civic-layer').selectOption('nta');
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='82');
+  assert.equal(await page.locator('#board-picker-field').isVisible(),false);
+  assert.equal(await page.locator('#neighborhood').isEnabled(),true);
+  await page.locator('#reset').click();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood/BX0202',title,
-    streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,noJSExceptions:true,measure:measured}));
+    streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,communityBoards:59,communityBoardSelected:'Bronx CB1',noJSExceptions:true,measure:measured}));
   await context.close();
 }
 
