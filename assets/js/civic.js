@@ -110,7 +110,7 @@ export function indexCommunityDistricts(records){
     return {record,parts:polygons.map(rings=>({rings,bounds:polygonBounds(rings)}))};
   });
 }
-export function lookupCommunityDistrict(index,latitude,longitude){
+export function lookupPolygonAtPoint(index,latitude,longitude){
   if(!Array.isArray(index)||!index.length)return {status:'unavailable'};
   if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||
     latitude<-90||latitude>90||longitude<-180||longitude>180)return {status:'invalid'};
@@ -131,5 +131,10 @@ export function lookupCommunityDistrict(index,latitude,longitude){
   if(hits.length>1||hits.some(x=>x.relation==='boundary'))
     return {status:'boundary',candidates:hits.map(x=>x.record)};
   const record=hits[0].record;
-  return {status:record.type==='board'?'board':'joint_interest',record};
+  return {status:'match',record};
+}
+export function lookupCommunityDistrict(index,latitude,longitude){
+  const hit=lookupPolygonAtPoint(index,latitude,longitude);
+  if(hit.status!=='match')return hit;
+  return {status:hit.record.type==='board'?'board':'joint_interest',record:hit.record};
 }
