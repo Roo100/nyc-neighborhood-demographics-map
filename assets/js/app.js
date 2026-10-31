@@ -5,6 +5,7 @@ import {ACS_FILE,ACS_LAYER_OPTIONS,validateACSDisplay,acsLayerMetric,acsLayerErr
 import {DISTRICT_KINDS,OFFICIAL_LEGISLATIVE_DIRS,validateDistrictGeoJSON,validateOfficialNames,makeDistrictLookup,identifyLegislators,officialForDistrict} from './representation.js';
 import {ENROLLMENT_FILE,PARTY_OPTIONS,validateCouncilEnrollment,enrollmentShare,partyFill,partyLegend,enrollmentDetails} from './political.js';
 import {MAYOR_2025_CITYWIDE,validateCitywideMayoralResult} from './elections.js';
+import {fetchNYCPollSites,OFFICIAL_POLL_LOOKUP} from './polling.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -29,7 +30,7 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','council-picker-field','council-picker','political-metric','political-field','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','council-picker-field','council-picker','political-metric','political-field','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','poll-sites','poll-sites-note','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
   communityByCode=new Map(), communityLayer=null,
@@ -41,7 +42,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   acsLookup=new Map(),acsReady=false,
   legislativeLookup={},legislativeOfficials=null,
   councilEnrollment=new Map(),enrollmentReady=false,
-  councilLayer=null,selectedCouncil=null;
+  councilLayer=null,selectedCouncil=null,
+  pollLayer=null,pollRequest=0,pollCache=new Map();
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -1058,10 +1060,59 @@ function render(){
   }
 }
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status('Selected '+found.name+', '+found.borough+'. Click any street in the neighborhood to view its community board.');}else{status('No matching neighborhood in the selected borough. Try another spelling or clear the borough filter.',true);}}
+async function setPollingSites(kind){
+  const token=++pollRequest;
+  if(pollLayer){map.removeLayer(pollLayer);pollLayer=null;}
+  const note=ui['poll-sites-note'];
+  if(kind==='off'){
+    note.textContent='Poll sites are assigned by registered home address. Verify yours using the official BOE lookup.';
+    return;
+  }
+  note.textContent='Loading official October 2026 NYC '+(kind==='early'?'early-voting':'Election Day')+' sites…';
+  try{
+    let sites=pollCache.get(kind);
+    if(!sites){sites=await fetchNYCPollSites(kind);pollCache.set(kind,sites);}
+    if(token!==pollRequest||ui['poll-sites'].value!==kind)return;
+    const group=L.layerGroup();
+    const color=kind==='early'?'#FF3B9D':'#00D9FF';
+    for(const site of sites){
+      const marker=L.circleMarker([site.lat,site.lng],{
+        radius:5,color:'#241039',weight:1.5,fillColor:color,fillOpacity:.96,
+        pane:'markerPane',bubblingMouseEvents:false
+      });
+      const root=document.createElement('div');
+      root.className='poll-site-popup';
+      const heading=document.createElement('strong');
+      heading.textContent=site.name;
+      const addr=document.createElement('p');
+      addr.textContent=[site.address,site.city,site.zip].filter(Boolean).join(', ');
+      const type=document.createElement('p');
+      type.textContent=kind==='early'?'Early-voting location · October 24–November 1, 2026':'Election Day location · November 3, 2026';
+      const warning=document.createElement('p');
+      warning.className='poll-site-warning';
+      warning.textContent='Showing a polling-site location does not mean you are assigned here. Locations can change. Confirm your address with NYC BOE.';
+      const link=document.createElement('a');
+      link.href=OFFICIAL_POLL_LOOKUP;link.target='_blank';link.rel='noopener noreferrer';
+      link.textContent='Check my assigned polling site';
+      root.append(heading,addr,type,warning,link);
+      marker.bindPopup(root,{maxWidth:300});
+      group.addLayer(marker);
+    }
+    pollLayer=group.addTo(map);
+    note.textContent=sites.length.toLocaleString()+' official '+(kind==='early'?'early-voting':'Election Day')+' locations mapped (October 2026 snapshot). Zoom in to inspect sites; verify your assigned site by address.';
+    status('Showing '+sites.length.toLocaleString()+' official NYC polling locations. This layer does not determine your assigned site.');
+  }catch(error){
+    if(token!==pollRequest)return;
+    console.warn('Polling locations could not be loaded:',error);
+    note.textContent='Polling location map temporarily unavailable. Use the official BOE address lookup to confirm your assigned site.';
+    status('Polling-site location feed unavailable. Use the NYC BOE link.',true);
+  }
+}
 function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
   ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
+  ui['poll-sites'].addEventListener('change',()=>{void setPollingSites(ui['poll-sites'].value);});
   ui['demographic-layer'].addEventListener('change',()=>{
     if(!acsReady)return;
     updateACSLegend();
@@ -1145,6 +1196,8 @@ function wire(){
     ui['demographic-layer'].value='borough';
     ui['political-metric'].value='democrat';
     ui['map-detail'].value='streets';
+    ui['poll-sites'].value='off';
+    void setPollingSites('off');
     ui['school-type'].value='all';
     ui['school-search'].value='';
     ui['community-board'].value='';
