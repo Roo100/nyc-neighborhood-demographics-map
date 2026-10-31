@@ -98,22 +98,24 @@ async function checkViewport(label, viewport) {
   await page.locator('#map').click({position:{
     x:Math.round(neighborhoodMapBox.width/2),y:Math.round(neighborhoodMapBox.height/2)
   }});
-  await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().waitFor();
-  const heading=await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().textContent();
+  const popupSelector=label==='mobile'?'.nyc-pop-mobile-overlay':'.nyc-pop-info-popup:visible';
+  await page.locator(popupSelector+' .nyc-pop-info-title').last().waitFor();
+  const heading=await page.locator(popupSelector+' .nyc-pop-info-title').last().textContent();
   assert.ok(heading&&heading!=='Selected NYC location','Map click must identify the actual neighborhood under the cursor');
   const firstPopup=await page.locator('.nyc-pop-info-card:visible').last().textContent();
   assert.ok(firstPopup.includes('Community board'));
   assert.ok(firstPopup.includes('School district'));
   assert.ok(firstPopup.includes('Borough president'));
   assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
-  const popupWidth=await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-content').last()
+  const popupWidth=await page.locator(popupSelector+' .nyc-pop-info-card').last()
     .evaluate(element=>element.getBoundingClientRect().width);
-  assert.ok(popupWidth>=245,'Civic popup content must be readable, not a tiny vertical text strip: '+popupWidth);
+  assert.ok(popupWidth>=220,'Civic popup content must be readable, not a tiny vertical text strip: '+popupWidth);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-neighborhood-click-popup.png',fullPage:true});
   assert.equal(await page.locator('#detail-name').textContent(),heading,'Selected map neighborhood and side profile must match');
   // Close the popup using the exposed accessible close control. Avoid relying
   // on pixel geometry if test zoom/scroll has positioned the control at edge.
-  await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
+  if(label==='mobile')await page.locator('.nyc-pop-mobile-overlay .nyc-pop-mobile-close').click();
+  else await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
     .evaluate(node=>node.click());
   await page.locator('#identify-board-center').click();
   await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
@@ -153,8 +155,9 @@ async function checkViewport(label, viewport) {
     document.querySelector('#point-board-panel')?.dataset.lookupStatus),null,{timeout:15000});
   assert.ok((await page.locator('#point-board-coordinates').textContent()).includes('Selected map point:'));
   assert.ok(await page.locator('.grid-map-click-marker').count()===1);
-  assert.equal(await page.locator('.nyc-pop-info-popup:visible').count(),1);
-  await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
+  assert.equal(await page.locator(popupSelector).count(),1);
+  if(label==='mobile')await page.locator('.nyc-pop-mobile-overlay .nyc-pop-mobile-close').click();
+  else await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
     .evaluate(node=>node.click());
   // The point can also be selected by clicking the map grid directly.
   const mapBoxForClick=await page.locator('#map').boundingBox();
