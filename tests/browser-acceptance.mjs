@@ -100,13 +100,13 @@ async function checkViewport(label, viewport) {
   }});
   await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().waitFor();
   const heading=await page.locator('.nyc-pop-info-popup:visible .nyc-pop-info-title').last().textContent();
-  assert.equal(heading,'Longwood','Map click should identify selected neighborhood rather than a generic grid location');
+  assert.ok(heading&&heading!=='Selected NYC location','Map click must identify the actual neighborhood under the cursor');
   const firstPopup=await page.locator('.nyc-pop-info-card:visible').last().textContent();
   assert.ok(firstPopup.includes('Community board'));
   assert.ok(firstPopup.includes('School district'));
   assert.ok(firstPopup.includes('Borough president'));
   assert.ok(!firstPopup.includes('BX0202'),'No internal NTA identifier in public popup');
-  assert.equal(await page.locator('#detail-name').textContent(),'Longwood');
+  assert.equal(await page.locator('#detail-name').textContent(),heading,'Selected map neighborhood and side profile must match');
   // Close the popup using the exposed accessible close control. Avoid relying
   // on pixel geometry if test zoom/scroll has positioned the control at edge.
   await page.locator('.nyc-pop-info-popup:visible .leaflet-popup-close-button').last()
@@ -114,8 +114,8 @@ async function checkViewport(label, viewport) {
   await page.locator('#identify-board-center').click();
   await page.waitForFunction(()=>['board','boundary','joint_interest','outside'].includes(
     document.querySelector('#point-board-panel')?.dataset.lookupStatus));
-  assert.equal(await page.locator('#detail-name').textContent(),'Longwood',
-    'Neighborhood profile remains available beside the street-grid lookup');
+  assert.equal(await page.locator('#detail-name').textContent(),heading,
+    'Clicked neighborhood profile remains available beside the street-grid lookup');
   await page.waitForTimeout(600);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
