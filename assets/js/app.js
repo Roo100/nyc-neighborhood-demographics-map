@@ -241,7 +241,7 @@ function showCommunityBoard(board){
     });
   }
   const featureLayer=communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===board.code);
-  if(featureLayer){featureLayer.bringToFront();fitNYCBounds(featureLayer.getBounds(),{padding:[50,50],maxZoom:13});}
+  if(featureLayer){featureLayer.bringToFront();map.stop();fitNYCBounds(featureLayer.getBounds(),{padding:[25,25],maxZoom:14,animate:false});}
   status('Selected '+board.name+'. Verify current board contacts in the NYC directory; elected officials use separate boundaries.');
 }
 async function loadCommunityGeography(){
@@ -343,7 +343,14 @@ function render(){
   if(selectedCommunity&&!visibleBoards.includes(selectedCommunity))selectedCommunity=null;
   if(boardMode){
     selectedCommunity?boardProfile(selectedCommunity):boardOverview(borough);
-    if(visibleBoards.length)fitNYCBounds(communityLayer.getBounds(),{padding:[35,35]});
+    if(visibleBoards.length){
+      const target=selectedCommunity
+        ? communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===selectedCommunity.code)
+        : null;
+      map.stop();
+      fitNYCBounds(target?target.getBounds():communityLayer.getBounds(),
+        target?{padding:[25,25],maxZoom:14,animate:false}:{padding:[35,35],animate:false});
+    }
   }else{
     if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
     if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
