@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=nov-ballot-2026-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=polling-sites-2026-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=primary-2026-1"></script>
+  <script type="module" src="assets/js/app.js?v=polling-sites-2026-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -74,12 +74,24 @@
           <input id="school-search" type="search" disabled placeholder="Enter a school name or NYSED ID" autocomplete="off" />
           <button type="button" id="school-find" disabled>Find school</button>
         </div>
+        <div class="field polling-sites-field">
+          <label for="poll-sites">2026 Polling locations</label>
+          <select id="poll-sites" aria-describedby="poll-sites-note">
+            <option value="off" selected>Polling sites: Off</option>
+            <option value="early">Early voting sites · Oct 24–Nov 1</option>
+            <option value="day">Election Day sites · Nov 3</option>
+          </select>
+        </div>
         <div class="field map-view-field"><label for="map-detail">Map detail</label><select id="map-detail" disabled><option value="streets" selected>Streets + grid</option><option value="comic">Neon-only</option></select></div>
         <div class="field search-field"><label for="neighborhood">Find neighborhood</label><input id="neighborhood" type="search" placeholder="Search e.g. Harlem, Astoria, Longwood" autocomplete="off" list="nta-options" disabled /><datalist id="nta-options"></datalist></div>
         <button id="search-button" type="button" disabled>Find on map</button>
         <button id="reset" type="button" class="secondary" disabled aria-label="Reset map to all five boroughs and default layers">↺ Reset Map</button>
       </section>
       <div class="status" id="status" role="status" aria-live="polite">Loading official NYC geography…</div>
+      <div class="poll-sites-info" role="note">
+        <span id="poll-sites-note">Polling sites are assigned by registered home address. A map pin is not proof of assignment.</span>
+        <a href="https://www.vote.nyc/page/find-your-poll-site" target="_blank" rel="noopener noreferrer">Verify your assigned site at NYC BOE</a>
+      </div>
       <section class="workspace" aria-label="NYC neighborhood map and details">
         <div class="map-frame">
           <div id="map" role="region" aria-label="Interactive map of New York City streets, block grids and official 2020 Neighborhood Tabulation Areas, with surrounding municipalities masked"></div>
