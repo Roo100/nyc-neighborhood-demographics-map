@@ -31,7 +31,7 @@ test('each of five official boroughs has an accessible direct control',()=>{
 test('borough overview retains NTA drilldown and versioned official geography',()=>{
   assert.ok(js.includes("data/nta2020.geojson"));
   assert.ok(js.includes("filterNtas(records,borough)"));
-  assert.ok(js.includes("function display(record)"));
+  assert.ok(js.includes("function display(record,zoom=true)"));
   assert.ok(js.includes("findNta(records,ui.neighborhood.value,ui.borough.value)"));
   assert.ok(js.includes("BOROUGH_COLORS"));
 });
@@ -53,4 +53,15 @@ test('comic atlas uses neon borough palette and exact named orientation markers'
   assert.ok(html.includes('comic-style'));
   assert.ok(css.includes('.comic-landmark-inner'));
   assert.ok(css.includes('prefers-reduced-motion'));
+});
+
+test('neighborhood popup is the public primary map interaction without NTA codes',()=>{
+  assert.ok(js.includes('function showCivicPopup(latlng,neighborhood,communityMatch)'));
+  assert.ok(js.includes('identifyCommunityAtPoint(event.latlng,r)'));
+  assert.ok(js.includes("lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng)"));
+  assert.ok(js.includes("title.textContent=neighborhood?.name||'Selected NYC location'"));
+  assert.ok(css.includes('.nyc-pop-info-popup .leaflet-popup-content-wrapper'));
+  assert.ok(!html.includes('Find neighborhood or NTA code'));
+  assert.ok(!js.includes("'2020 NTA code'"));
+  assert.ok(!js.includes("'NTA type code'"));
 });
