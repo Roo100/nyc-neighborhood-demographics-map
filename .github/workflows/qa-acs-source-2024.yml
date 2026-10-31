@@ -1,0 +1,49 @@
+name: ACS 2024 income and poverty source validation — QA only
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/qa-acs-source-2024.yml'
+      - 'scripts/fetch_acs_income.py'
+      - 'scripts/build_income_nta.py'
+      - 'scripts/audit_income_nta.py'
+      - 'tests/test_build_income_nta.py'
+      - 'data/acs/README.md'
+
+permissions:
+  contents: read
+
+jobs:
+  research-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests for aggregation, grouped-median safeguards and missingness
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Download source ACS 2024 five-year tract tables — staging
+        run: |
+          python scripts/fetch_acs_income.py
+      - name: Derive *unpublished* neighborhood QA records
+        run: python scripts/build_income_nta.py
+      - name: Audit geographic coverage and derive publish hold
+        run: python scripts/audit_income_nta.py
+      - name: Upload private-to-workflow QA outputs only (never commit to main)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acs-2024-qa-staging
+          path: |
+            data/acs/tract_income_2024.csv
+            data/acs/tract_income_2024-provenance.json
+            data/acs/nta_income_2024.json
+            data/acs/qa_summary_2024.json
+          if-no-files-found: warn
+          retention-days: 7
