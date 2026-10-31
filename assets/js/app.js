@@ -84,6 +84,9 @@ async function init(){
       layer.on('mouseout',()=>{if(selected!==r)layer.setStyle(baseStyle(r));});
     }}).addTo(map);
     wire();render();
+    if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
+      throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
+    }
     if(records.length===262)status(`Loaded ${records.length} official 2020 NTA polygons from ${location}. Geographic-only milestone; no demographic data inferred.`);
   }catch(error){console.error(error);status(`Unable to load the map: ${error.message}. Check connectivity and the GeoJSON source.`,true);}
 }
