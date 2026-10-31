@@ -50,3 +50,197 @@ body{font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-s
  .map-key{bottom:10px;left:10px;padding:8px 10px;max-width:145px;font-size:11px}
  .details{padding:22px}
 }
+
+
+/* Comic atlas design study — visual styling only; no new statistical measures. */
+:root{
+  --navy:#241039;
+  --ink:#241039;
+  --muted:#483c5c;
+  --rule:#241039;
+  --page:#e9f9ff;
+  --lime:#C7FF00;
+  --pink:#FF3B9D;
+  --cyan:#00D9FF;
+  --purple:#AF68FF;
+  --orange:#FF9A24;
+}
+body{background:var(--page);color:var(--ink)}
+.shell{max-width:1560px}
+.masthead{
+  position:relative;overflow:hidden;
+  background:linear-gradient(112deg,#241039 0%,#3C1378 68%,#5722BD 100%);
+  border:4px solid var(--ink);
+  border-radius:18px 18px 0 0;
+  box-shadow:8px 9px 0 var(--ink);
+  padding-right:clamp(110px,14vw,215px);
+}
+.masthead::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.15;
+  background-image:radial-gradient(circle,#fff 1.7px,transparent 1.9px);
+  background-size:19px 19px;
+}
+.masthead::after{
+  content:"";position:absolute;right:8%;top:0;bottom:0;width:15%;
+  background:linear-gradient(100deg,transparent 48%,#ffcf36 48%,#ffcf36 51%,transparent 51%);
+  transform:skewX(-14deg);opacity:.45;pointer-events:none;
+}
+.masthead h1{
+  position:relative;z-index:1;
+  font-family:Impact,Haettenschweiler,"Arial Narrow Bold",system-ui,sans-serif;
+  font-weight:900;text-transform:uppercase;letter-spacing:.008em;
+  line-height:1.02;text-shadow:4px 4px 0 #110922;
+  font-size:clamp(2.5rem,5vw,5rem);
+}
+.masthead h1 em{color:var(--lime);font-style:normal}
+.masthead p{position:relative;z-index:1;max-width:690px;color:#fff}
+.masthead .eyebrow{position:relative;z-index:1;color:var(--cyan);font-weight:900}
+.cover-sticker{
+  position:absolute;right:4%;top:28%;z-index:2;
+  width:clamp(86px,10vw,145px);aspect-ratio:1;
+  background:var(--lime);color:var(--ink);
+  display:grid;place-content:center;text-align:center;
+  font-family:Impact,system-ui,sans-serif;font-size:clamp(21px,2.4vw,35px);
+  font-weight:900;line-height:1.07;letter-spacing:.04em;
+  border:4px solid var(--ink);box-shadow:7px 7px 0 var(--pink);
+  clip-path:polygon(50% 0%,61% 13%,78% 4%,82% 21%,98% 22%,91% 43%,100% 53%,87% 63%,94% 83%,74% 82%,62% 100%,47% 86%,28% 97%,22% 79%,3% 78%,11% 60%,0% 49%,15% 37%,6% 18%,27% 20%,37% 3%);
+  transform:rotate(9deg)
+}
+.borough-links{
+  border:4px solid var(--ink);border-top:0;
+  padding:20px 22px;background:var(--lime);
+  gap:9px
+}
+.borough-links-label{font-weight:900;color:var(--ink);letter-spacing:.055em}
+.borough-links button{
+  color:var(--ink);background:#fff;border:3px solid var(--ink);
+  border-radius:12px;box-shadow:3px 4px 0 var(--ink);
+  font-weight:900;text-transform:uppercase;font-size:12px;
+  min-height:45px;transition:transform .15s,box-shadow .15s,background .15s
+}
+.borough-links button:hover{background:var(--cyan);transform:translateY(-2px);box-shadow:4px 6px 0 var(--ink)}
+.borough-links button.active{background:var(--pink);border-color:var(--ink);color:var(--ink)}
+.controls{border:4px solid var(--ink);border-top:0;background:#fff;padding:18px 22px}
+.controls label{color:var(--ink);font-weight:900;text-transform:uppercase;letter-spacing:.035em}
+.controls select,.controls input[type="search"]{border:2px solid var(--ink);border-radius:9px;background:#fff}
+.controls button{background:var(--ink);border:3px solid var(--ink);border-radius:9px;color:#fff;box-shadow:3px 4px 0 var(--cyan);font-weight:900}
+.controls button.secondary{color:var(--ink);background:var(--lime);border-color:var(--ink)}
+.status{border:4px solid var(--ink);border-top:0;background:#f3efff;color:var(--ink);font-weight:700;padding:12px 22px}
+.status.error{background:#ffe7eb;color:#801c3e}
+.workspace{border:4px solid var(--ink);border-top:0;grid-template-columns:minmax(0,2.35fr) minmax(275px,.85fr)}
+.map-frame{border-right:4px solid var(--ink);background:#e4faff}
+#map,.leaflet-container{
+  background-color:#e4faff;
+  background-image:radial-gradient(#a4d7e6 1.1px,transparent 1.1px),linear-gradient(140deg,#e9fbff,#d7f5ff);
+  background-size:16px 16px,100% 100%
+}
+#map{height:650px}
+.leaflet-overlay-pane svg path{stroke-linejoin:round;stroke-linecap:round}
+.borough-label span{
+  font-family:Impact,"Arial Black",system-ui,sans-serif;
+  font-weight:900;text-transform:uppercase;letter-spacing:.035em;
+  color:var(--ink);font-size:15px;
+  background:#fff;border:3px solid var(--ink);
+  border-radius:7px;box-shadow:4px 5px 0 var(--ink);
+  transform:rotate(-3deg);transition:transform .15s,background .15s;
+}
+.borough-label:hover span{transform:rotate(0deg) scale(1.07);background:var(--lime)}
+.comic-landmark{background:transparent;border:0;pointer-events:auto}
+.comic-landmark-inner{
+  display:flex;align-items:center;justify-content:center;
+  width:42px;height:42px;border-radius:50%;
+  background:#fff;border:3px solid var(--ink);
+  box-shadow:4px 4px 0 var(--pink);
+  font-size:22px;cursor:pointer;transform:rotate(-9deg);
+  transition:transform .12s,background .12s
+}
+.comic-landmark:hover .comic-landmark-inner{transform:rotate(0deg) scale(1.13);background:var(--lime)}
+.comic-tooltip{
+  background:#fff;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);
+  color:var(--ink);font-weight:900;border-radius:5px;
+}
+.map-key{
+  background:#fff;border:3px solid var(--ink);border-radius:10px;
+  box-shadow:5px 6px 0 var(--ink);padding:11px 14px;line-height:1.8
+}
+.map-key .key-title{font-family:Impact,system-ui,sans-serif;font-size:17px;letter-spacing:.025em;text-transform:uppercase}
+.map-key .key-note{color:var(--ink);font-size:11px;font-weight:700}
+.swatch{border:1.5px solid var(--ink);width:15px;height:15px}
+.swatch.bronx{background:var(--lime)}
+.swatch.brooklyn{background:var(--pink)}
+.swatch.manhattan{background:var(--cyan)}
+.swatch.queens{background:var(--purple)}
+.swatch.staten{background:var(--orange)}
+.details{background:#fff}
+.aside-kicker{color:#5722bd;font-weight:900}
+.details h2{color:var(--ink);font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:.01em}
+.details p{color:#4d4760}
+dl{gap:12px;align-items:start}
+dt{color:#554b6c;font-weight:800}
+dd{color:var(--ink)}
+.data-notice{border:2px solid var(--ink);background:#eeffcd;box-shadow:4px 4px 0 var(--ink);border-radius:10px}
+.data-notice strong{color:var(--ink)}
+.source-link{color:#5022aa}
+.below{border:4px solid var(--ink);border-top:0;background:#fffbe7;border-radius:0 0 14px 14px;box-shadow:8px 8px 0 var(--ink)}
+.below strong{color:var(--ink)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.leaflet-marker-icon:focus-visible{outline:3px solid #ff7400;outline-offset:3px}
+@media(max-width:900px){
+ .workspace{grid-template-columns:1fr}
+ .map-frame{border-right:0;border-bottom:4px solid var(--ink)}
+ .masthead{padding-right:clamp(110px,20vw,150px)}
+ #map{height:535px}
+}
+@media(max-width:600px){
+ .masthead{padding:23px 17px 27px}
+ .masthead h1{font-size:clamp(2.1rem,11vw,3rem);padding-right:82px}
+ .cover-sticker{right:14px;top:44px;width:72px;font-size:19px;border-width:2px}
+ .masthead p{font-size:13px}
+ .borough-links{padding:13px 12px}
+ .borough-links button{min-height:38px;padding:7px 10px}
+ #map{height:480px}
+ .borough-label{display:none}
+ .comic-landmark-inner{width:32px;height:32px;font-size:17px;border-width:2px}
+ .comic-landmark{margin:5px}
+ .map-key{font-size:11px;max-width:149px;padding:8px 9px}
+ .map-key .key-title{font-size:14px}
+ .controls{padding:14px}
+ .details{padding:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .borough-links button,.borough-label span,.comic-landmark-inner{transition:none}
+}
+
+
+/* Final visual QA adjustments: larger geographic footprint, unobstructed mobile map. */
+@media(min-width:601px){
+  .map-key{top:16px;bottom:auto;left:18px}
+}
+@media(max-width:600px){
+  .borough-links{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+  .borough-links-label{grid-column:1/-1}
+  .borough-links button{width:100%;margin:0}
+  .borough-links button:last-of-type{grid-column:1/-1}
+  #map{height:390px}
+  .map-key{
+    position:static;
+    inset:auto;
+    max-width:none;
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:10px;
+    row-gap:3px;
+    margin:0;padding:10px 13px;
+    border:0;border-top:3px solid var(--ink);
+    border-radius:0;
+    box-shadow:none;
+    background:#ffffff;
+    font-size:12px;
+  }
+  .map-key .key-title,.map-key .key-note{grid-column:1/-1}
+  .map-key .key-note{margin-top:4px;padding-top:6px}
+}

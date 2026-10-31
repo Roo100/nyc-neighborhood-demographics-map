@@ -30,7 +30,20 @@ test('borough overview retains NTA drilldown and versioned official geography',(
 });
 
 test('unverified income and political measures remain absent',()=>{
-  assert.ok(html.includes('after geographic alignment and source checks'));
+  assert.ok(html.includes('remain unavailable until their source data and geographic alignment pass validation'));
   assert.ok(!js.includes('nta_income_2024.json'));
   assert.ok(!js.includes('election_results'));
+});
+
+test('comic atlas uses neon borough palette and exact named orientation markers',()=>{
+  const palette=['#C7FF00','#FF3B9D','#00D9FF','#AF68FF','#FF9A24'];
+  for(const hex of palette)assert.ok(js.includes(hex),'Missing borough fill '+hex);
+  const landmarks=['Yankee Stadium','Coney Island Cyclone','Empire State Building','The Unisphere','St. George Ferry Terminal'];
+  for(const name of landmarks)assert.ok(js.includes(name),'Missing named landmark '+name);
+  assert.equal(js.split('coords:[').length-1,5);
+  assert.ok(js.includes("marker.bindTooltip("));
+  assert.ok(js.includes("landmarkLayer.clearLayers()"));
+  assert.ok(html.includes('comic-style'));
+  assert.ok(css.includes('.comic-landmark-inner'));
+  assert.ok(css.includes('prefers-reduced-motion'));
 });
