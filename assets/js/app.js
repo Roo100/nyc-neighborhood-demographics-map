@@ -1,6 +1,7 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict,lookupPolygonAtPoint} from './civic.js';
 import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
+import {ACS_FILE,ACS_LAYER_OPTIONS,validateACSDisplay,acsLayerMetric,acsLayerError,acsFill,dataLegend,formatACSValue,raceLabels} from './acs.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -25,7 +26,7 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','demographic-layer','demographic-field','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
   communityByCode=new Map(), communityLayer=null,
@@ -33,7 +34,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   schoolPoints=[],schoolById=new Map(),schoolMarkers=null,
   selectedSchool=null,selectedSchoolDistrict=null,
   communitySpatialIndex=null,schoolDistrictSpatialIndex=null,
-  selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null;
+  selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null,
+  acsLookup=new Map(),acsReady=false;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -53,18 +55,21 @@ async function loadGeography(){
   catch (_){ const source=await download(OFFICIAL_GEOJSON);return {source,location:'NYC Open Data (live development fallback)'}; }
 }
 function baseStyle(record){
-  const fill=BOROUGH_COLORS[record.borough] || '#cbd5dc';
+  const layer=ui['demographic-layer'].value;
+  const censusMode=acsReady&&layer!=='borough'&&ui['civic-layer'].value==='nta';
+  const fill=censusMode?acsFill(acsLookup.get(record.code),layer):
+    (BOROUGH_COLORS[record.borough] || '#cbd5dc');
   const streets=ui['map-detail'].value==='streets';
-  // In street view, transparent neon borough overlays expose actual roads and intersections.
-  // Comic-only view restores fully saturated fills while preserving the same true boundaries.
+  // In ACS mode the colored data fills are legible over an actual street grid.
+  // Missing/suppressed areas are gray; the original neon borough mode is unchanged.
   if(ui.borough.value==='all') return {
     color:'#241039',weight:streets?.8:.72,opacity:streets?.48:.9,
-    fillColor:fill,fillOpacity:streets?.27:1
+    fillColor:fill,fillOpacity:censusMode?(streets?.60:.94):(streets?.27:1)
   };
   return {
     color:'#241039',weight:streets?1.5:1.3,opacity:1,
-    fillColor:record.special?'#dee6ed':fill,
-    fillOpacity:streets?(record.special?.12:.12):.96
+    fillColor:censusMode?fill:(record.special?'#dee6ed':fill),
+    fillOpacity:censusMode?(streets?.55:.94):(streets?.12:.96)
   };
 }
 function styleFor(record){
@@ -172,6 +177,115 @@ function writeMeta(pairs){
   }
 }
 
+const preservedBoroughLegend=document.querySelector('.map-key').innerHTML;
+function updateACSLegend(){
+  const container=document.querySelector('.map-key');
+  const layer=ui['demographic-layer'].value;
+  if(layer==='borough'||!acsReady||ui['civic-layer'].value!=='nta'){
+    container.innerHTML=preservedBoroughLegend;
+    return;
+  }
+  const legend=dataLegend(layer);
+  const title=document.createElement('div');
+  title.className='key-title';title.textContent=legend.title;
+  container.replaceChildren(title);
+  for(let i=0;i<legend.labels.length;i++){
+    const item=document.createElement('div');
+    item.className='acs-legend-item';
+    const color=document.createElement('span');
+    color.className='acs-legend-swatch';color.style.background=legend.colors[i];
+    const label=document.createElement('span');
+    label.textContent=legend.labels[i];
+    item.append(color,label);container.append(item);
+  }
+  const noData=document.createElement('div');
+  noData.className='acs-legend-item';
+  const swatch=document.createElement('span');
+  swatch.className='acs-legend-swatch';swatch.style.background='#cbd5d9';
+  const label=document.createElement('span');
+  label.textContent='No reliable data';noData.append(swatch,label);container.append(noData);
+  const note=document.createElement('p');
+  note.className='acs-legend-note';
+  note.textContent=layer==='income'
+    ?'2020–2024 ACS derived household-income bracket midpoint approximation, not published B19013. 2024 dollars.'
+    :'2020–2024 ACS five-year derived tract aggregates. Gray = unavailable. Estimates have sampling error.';
+  container.append(note);
+}
+function acsProfileRows(record){
+  const stats=acsLookup.get(record?.code);
+  if(!acsReady||!stats)return null;
+  const rows=[
+    ['Approx. household median income',formatACSValue(stats.median_household_income_grouped_approx_usd,'income')],
+    ['Poverty rate',formatACSValue(stats.poverty_rate_pct,'poverty')],
+  ];
+  if(stats.poverty_rate_pct!=null&&stats.poverty_rate_moe_90_pp_conservative!=null){
+    rows.push(['Poverty margin of error','±'+stats.poverty_rate_moe_90_pp_conservative.toFixed(1)+' percentage points (approx. 90%)']);
+  }
+  for(const [layer,group] of Object.entries(raceLabels())){
+    const entry=stats.race_ethnicity?.[group];
+    rows.push([group,entry
+      ?entry.pct.toFixed(1)+'% (±'+entry.moe_pp_90_approx.toFixed(1)+' pp, approx. 90%)'
+      :'Not available / insufficiently reliable']);
+  }
+  return {rows,stats};
+}
+function showACSProfile(record){
+  const section=document.getElementById('acs-profile');
+  const content=document.getElementById('acs-profile-content');
+  const note=document.getElementById('acs-profile-note');
+  const source=acsProfileRows(record);
+  section.hidden=!source;
+  if(!source){content.replaceChildren();return;}
+  const list=document.createElement('dl');
+  list.className='acs-profile-facts';
+  for(const [name,value]of source.rows){
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=name;dd.textContent=value;list.append(dt,dd);
+  }
+  content.replaceChildren(list);
+  note.textContent='Estimates derived from the 2020–2024 ACS five-year tract tables, aggregated to 2020 NTAs. Income uses grouped-bin interpolation, not a published ACS median; no valid median MOE. Margins of error are approximate. School district and community board boundaries differ.';
+}
+function addACSPopupInfo(root,neighborhood){
+  const information=acsProfileRows(neighborhood);
+  if(!information)return;
+  const details=document.createElement('details');
+  details.className='acs-popup-details';
+  const summary=document.createElement('summary');
+  summary.textContent='Neighborhood demographics · ACS 2020–2024';
+  const facts=document.createElement('dl');
+  facts.className='acs-popup-facts';
+  for(const [label,value]of information.rows){
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=label;dd.textContent=value;facts.append(dt,dd);
+  }
+  const note=document.createElement('p');
+  note.className='acs-method-note';
+  note.textContent='Approximate NTA estimates from tract aggregates. Income is a grouped-bin approximation, not the Census published median.';
+  details.append(summary,facts,note);root.append(details);
+}
+async function loadACSGeography(){
+  try{
+    const source=await download(ACS_FILE);
+    acsLookup=validateACSDisplay(source,new Set(records.map(r=>r.code)));
+    acsReady=true;
+    ui['demographic-layer'].disabled=false;
+    document.getElementById('acs-source').textContent=
+      '2020–2024 ACS five-year estimates derived from official 2020 Census tracts using NYC DCP 2020 NTA crosswalk. Income medians are grouped-bin approximations (not published B19013); 90% error ranges for rates are approximations. Special-purpose and unreliable estimates appear gray.';
+    updateACSLegend();
+    geoLayer.eachLayer(layer=>{
+      const record=byCode.get(layer.feature.properties.__ntaCode);
+      if(record)layer.setStyle(styleFor(record));
+    });
+    if(selected)showACSProfile(selected);
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+  }catch(error){
+    console.warn('ACS derived neighborhood layer unavailable:',error);
+    ui['demographic-layer'].disabled=true;
+    acsReady=false;
+    document.getElementById('acs-source').textContent=
+      'ACS neighborhood estimates are temporarily unavailable; borough colors and official civic geography remain usable.';
+  }
+}
 function closeMobileCivicCard(){
   map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay').forEach(el=>el.remove());
 }
@@ -237,6 +351,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   if(borough&&BOROUGH_PRESIDENTS[borough])
     row('Borough president',BOROUGH_PRESIDENTS[borough]);
   root.append(facts);
+  if(neighborhood)addACSPopupInfo(root,neighborhood);
   const links=document.createElement('div');
   links.className='nyc-pop-info-links';
   for(const [label,url] of [
@@ -348,8 +463,9 @@ function display(record,zoom=true){
   selected=record;
   ui['profile-kicker'].textContent='NEIGHBORHOOD PROFILE';
   ui['detail-name'].textContent=record.name;
-  ui['detail-intro'].textContent=record.special?'Official special-purpose area; it may have limited or no residential population.':'Official 2020 Neighborhood Tabulation Area. Demographic and election results are not yet attached.';
+  ui['detail-intro'].textContent=record.special?'Official special-purpose area; residential ACS statistics may not be meaningful.':'NYC Planning 2020 neighborhood geography. ACS 2020–2024 derived demographic estimates are shown when source quality allows; election results remain pending.';
   writeMeta([['Borough',record.borough],['Area type',record.special?'Special-purpose area':'Neighborhood']]);
+  showACSProfile(record);
   updateCivicContext(record.borough);
   geoLayer.eachLayer(layer=>{
     const r=byCode.get(layer.feature.properties.__ntaCode);
@@ -572,6 +688,9 @@ async function loadEducationGeography(){
 }
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
+  ui['demographic-field'].hidden=mode!=='nta';
+  updateACSLegend();
+  document.getElementById('acs-profile').hidden=mode!=='nta'||!selected||!acsReady;
   const visible=filterNtas(records,borough);
   const boardMode=mode==='boards'&&!!communityLayer;
   const districtMode=mode==='schooldistricts'&&!!schoolDistrictLayer;
@@ -710,6 +829,7 @@ function render(){
     refreshSchoolPins();
   }else{
     if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
+    if(selected)showACSProfile(selected);
     if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
   }
 }
@@ -718,6 +838,16 @@ function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
   ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
+  ui['demographic-layer'].addEventListener('change',()=>{
+    if(!acsReady)return;
+    updateACSLegend();
+    geoLayer.eachLayer(layer=>{
+      const item=byCode.get(layer.feature.properties.__ntaCode);
+      if(item)layer.setStyle(styleFor(item));
+    });
+    if(selected)showACSProfile(selected);
+    status('Viewing '+ACS_LAYER_OPTIONS[ui['demographic-layer'].value].label+'. Gray areas have missing or unreliable ACS estimates.');
+  });
   ui['community-board'].addEventListener('change',()=>{
     const found=communityByCode.get(Number(ui['community-board'].value));
     if(found)showCommunityBoard(found);
@@ -794,6 +924,7 @@ async function init(){
     setMapDetail(ui['map-detail'].value);
     void loadCommunityGeography();
     void loadEducationGeography();
+    void loadACSGeography();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
