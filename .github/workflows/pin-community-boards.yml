@@ -33,6 +33,9 @@ jobs:
           git add data/civic/community-districts-2026.geojson data/civic/community-districts-2026-validation.json
           if ! git diff --cached --quiet; then
             git commit -m "Pin and audit DCP 2026 community district boundaries"
+            # Other review-branch edits may have landed after checkout; rebase, never force push.
+            git fetch origin feature/nyc-civic-community-boards
+            git rebase origin/feature/nyc-civic-community-boards
             git push origin HEAD:feature/nyc-civic-community-boards
           fi
       - name: Archive source validation evidence
