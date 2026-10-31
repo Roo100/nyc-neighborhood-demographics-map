@@ -1,0 +1,32 @@
+name: Audit official 2025 NYC mayoral election-district CSV (research only)
+on:
+  push:
+    branches:
+      - research/2025-mayor-election-ed-audit
+    paths:
+      - scripts/audit_boe_mayor_2025_csv.py
+      - .github/workflows/audit-mayor-2025-ed.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schema-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and inspect BOE certified mayor ED CSV — no publication
+        run: python scripts/audit_boe_mayor_2025_csv.py
+      - name: Archive schema evidence (not deployed to site)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2025-mayor-boe-ed-audit
+          path: data/elections/mayor_2025_ed_schema_audit.json
+          if-no-files-found: warn
+          retention-days: 10
