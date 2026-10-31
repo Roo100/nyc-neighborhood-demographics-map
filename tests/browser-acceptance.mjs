@@ -65,6 +65,44 @@ async function checkViewport(label, viewport) {
     assert.equal(manhattanClear,0,'Manhattan landmark area must reveal the street grid through matte');
   }
   assert.ok(await page.locator('#map .leaflet-control-attribution').count()===1,'Street source attribution remains visible');
+
+  // Regression: the floating 'Color Your NYC' legend must not cover +/- zoom
+  // (as reported in the screenshot) or the actual metric distance scale.
+  const mapControls=await page.evaluate(()=>{
+    const root=document.querySelector('#map');
+    const legend=document.querySelector('.map-key');
+    const zoom=root.querySelector('.leaflet-control-zoom');
+    const plus=zoom?.querySelector('.leaflet-control-zoom-in');
+    const minus=zoom?.querySelector('.leaflet-control-zoom-out');
+    const scale=root.querySelector('.leaflet-control-scale-line');
+    if(!legend||!zoom||!plus||!minus||!scale)return {missing:true};
+    const rect=el=>{
+      const r=el.getBoundingClientRect();
+      return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};
+    };
+    const overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    const map=rect(root),lg=rect(legend),z=rect(zoom),sc=rect(scale),a=rect(plus),b=rect(minus);
+    const visibleControl=el=>{
+      const p=rect(el),target=document.elementFromPoint((p.left+p.right)/2,(p.top+p.bottom)/2);
+      return target===el||el.contains(target);
+    };
+    return {missing:false,map,legend:lg,zoom:z,scale:sc,
+      legendZoomOverlap:overlap(lg,z),legendScaleOverlap:overlap(lg,sc),
+      plusVisible:visibleControl(plus),minusVisible:visibleControl(minus),
+      zoomInTopRight:z.left>map.left+map.width*.5&&z.top<map.top+map.height*.35,
+      scaleBottomLeft:sc.left<map.left+map.width*.5&&sc.top>map.top+map.height*.6,
+      scaleText:scale.textContent.trim()};
+  });
+  assert.ok(!mapControls.missing,'Zoom and metric scale controls must exist');
+  assert.ok(!mapControls.legendZoomOverlap,'Neon legend overlaps +/- zoom controls: '+JSON.stringify(mapControls));
+  assert.ok(!mapControls.legendScaleOverlap,'Neon legend overlaps metric scale: '+JSON.stringify(mapControls));
+  assert.ok(mapControls.zoomInTopRight,'Zoom must be top-right and separate from legend');
+  assert.ok(mapControls.scaleBottomLeft,'Metric scale must be bottom-left and clear of legend');
+  assert.ok(mapControls.plusVisible&&mapControls.minusVisible,
+    'Zoom links visually occluded by another overlay: '+JSON.stringify(mapControls));
+  assert.match(mapControls.scaleText,/(m|km)\b/,'Metric scale shows real distance units');
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-zoom-and-scale-controls.png',fullPage:false});
+
   await page.locator('#map-detail').selectOption('comic');
   await page.waitForFunction(()=>document.querySelectorAll('.leaflet-tile').length===0);
   await page.locator('#map-detail').selectOption('streets');
