@@ -1,0 +1,50 @@
+name: Validate BOE 2026 Council district party enrollment report — research
+on:
+  push:
+    branches: [research/boe-2026-party-enrollment]
+    paths:
+      - scripts/extract_boe_council_enrollment_2026.py
+      - .github/workflows/pin-boe-council-enrollment.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF text extractor
+        run: pip install --disable-pip-version-check pypdf==5.9.0
+      - name: Parse and validate 51 NYC Council enrollment totals against 56 PDF pages
+        run: python scripts/extract_boe_council_enrollment_2026.py
+      - name: Pin verified party enrollment to isolated research branch
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = 'research/boe-2026-party-enrollment'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/political/council_enrollment_2026.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin verified BOE 2026 party enrollment by Council district"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin research/boe-2026-party-enrollment
+              git rebase origin/research/boe-2026-party-enrollment
+              if git push origin HEAD:research/boe-2026-party-enrollment; then exit 0; fi
+              sleep 3
+            done
+            exit 1
+          fi
+      - name: Archive source audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boe-council-enrollment-source-review
+          path: data/political/council_enrollment_2026.json
+          retention-days: 14
+          if-no-files-found: warn
