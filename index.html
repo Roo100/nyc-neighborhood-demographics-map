@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=acs-2024-review-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=political-legislative-review-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=acs-2024-review-1"></script>
+  <script type="module" src="assets/js/app.js?v=political-legislative-review-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -28,7 +28,17 @@
         <button type="button" data-borough="Staten Island">Staten Island</button>
       </nav>
       <section class="controls" aria-label="Map controls">
-        <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option><option value="schooldistricts" disabled>School districts · 2026</option><option value="schools" disabled>K–12 school locations</option></select></div>
+        <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option><option value="schooldistricts" disabled>School districts · 2026</option><option value="schools" disabled>K–12 school locations</option><option value="enrollment" disabled>Party enrollment · City Council districts</option></select></div>
+        <div class="field political-field" id="political-field" hidden>
+          <label for="political-metric">2026 party enrollment · council districts</label>
+          <select id="political-metric" disabled>
+            <option value="democrat">Democratic share</option>
+            <option value="republican">Republican share</option>
+            <option value="unaffiliated">Unaffiliated share</option>
+            <option value="working_families">Working Families share</option>
+            <option value="dominant">Largest enrollment category</option>
+          </select>
+        </div>
         <div class="field demographic-field" id="demographic-field">
           <label for="demographic-layer">Neighborhood demographics · ACS 2024</label>
           <select id="demographic-layer" disabled>
@@ -73,6 +83,11 @@
           <p class="street-map-note" id="street-map-note" aria-live="polite">Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.</p>
         </div>
         <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl>
+          <section class="party-profile" id="party-profile" hidden aria-live="polite">
+            <h3 id="party-profile-title">City Council voter enrollment · February 2026</h3>
+            <div id="party-profile-content"></div>
+            <p class="party-profile-note">Party enrollment measures registration, not votes cast. Council districts are different from neighborhoods and community boards. Source: NYC Board of Elections, February 20, 2026.</p>
+          </section>
           <section class="acs-profile" id="acs-profile" hidden aria-live="polite">
             <h3 id="acs-profile-title">2020–2024 ACS neighborhood estimates</h3>
             <div id="acs-profile-content"></div>
@@ -96,13 +111,17 @@
             <a href="https://www.myschools.nyc/en/" target="_blank" rel="noopener noreferrer">Browse K–12 schools &amp; admissions on MySchools</a>
             <a href="https://infohub.nyced.org/reports/admissions-and-enrollment/directory-data" target="_blank" rel="noopener noreferrer">Official Fall 2026 K–12 school directories</a>
             <a href="https://data.cityofnewyork.us/d/8ugf-3d8u" target="_blank" rel="noopener noreferrer">Official school district map source</a>
+            <a href="https://www.vote.nyc/page/voter-enrollment-totals" target="_blank" rel="noopener noreferrer">Official 2026 voter enrollment by Council district</a>
+            <a href="https://www.vote.nyc/page/election-results-summary-2025" target="_blank" rel="noopener noreferrer">Official 2025 election results · ED-level</a>
             <a href="https://www.nyc.gov/site/communityboards/index.page" target="_blank" rel="noopener noreferrer">Community board directory &amp; contacts</a>
             <a href="https://council.nyc.gov/districts/" target="_blank" rel="noopener noreferrer">Find my City Council member</a>
             <a href="https://elections.ny.gov/new-york-state-elected-officials" target="_blank" rel="noopener noreferrer">Find State Senator &amp; Assembly member</a>
             <a href="https://www.nyc.gov/main/your-government" target="_blank" rel="noopener noreferrer">NYC elected officials directory</a>
             <a href="https://portal.311.nyc.gov/" target="_blank" rel="noopener noreferrer">NYC 311 services</a>
           </div>
-          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="acs-source" aria-live="polite">Income, poverty and race/ethnicity are derived from official 2020–2024 ACS five-year census-tract tables and NYC Planning's 2020 NTA crosswalk. Missing or unreliable values are not estimated.</p>
+          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="representation-source" aria-live="polite">Official 2026 Council, NY State Senate, Assembly and congressional district boundaries are being verified.</p>
+          <p class="civic-date-note" id="party-source" aria-live="polite">2026 Council district party enrollment source is loading from the official NYC Board of Elections report dated February 20, 2026.</p>
+          <p class="civic-date-note" id="acs-source" aria-live="polite">Income, poverty and race/ethnicity are derived from official 2020–2024 ACS five-year census-tract tables and NYC Planning's 2020 NTA crosswalk. Missing or unreliable values are not estimated.</p>
           <p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
         </section>
       </section>
