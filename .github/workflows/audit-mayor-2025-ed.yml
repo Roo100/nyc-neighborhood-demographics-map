@@ -24,6 +24,8 @@ jobs:
         run: python scripts/audit_boe_mayor_2025_csv.py
       - name: Audit candidate and administrative vote units against certified recap
         run: python scripts/audit_boe_mayor_2025_units.py
+      - name: Reconcile ED unit and recap candidate structure, research only
+        run: python scripts/reconcile_boe_mayor_2025_recap.py
       - name: Archive schema evidence (not deployed to site)
         if: always()
         uses: actions/upload-artifact@v4
@@ -32,5 +34,6 @@ jobs:
           path: |
             data/elections/mayor_2025_ed_schema_audit.json
             data/elections/mayor_2025_ed_units_audit.json
+            data/elections/mayor_2025_recap_reconciliation_audit.json
           if-no-files-found: warn
           retention-days: 10
