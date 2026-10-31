@@ -562,12 +562,27 @@ function wire(){
     const found=communityByCode.get(Number(ui['community-board'].value));
     if(found)showCommunityBoard(found);
   });
+  ui['education-picker'].addEventListener('change',()=>{
+    const found=schoolDistrictByCode.get(Number(ui['education-picker'].value));
+    if(found)selectSchoolDistrict(found);
+  });
+  ui['school-type'].addEventListener('change',()=>{
+    selectedSchool=null;
+    render();
+  });
+  ui['school-find'].addEventListener('click',findSchool);
+  ui['school-search'].addEventListener('keydown',event=>{
+    if(event.key==='Enter'){event.preventDefault();findSchool();}
+  });
+  map.on('moveend zoomend',refreshSchoolPins);
   ui['civic-layer'].addEventListener('change',()=>{
     selected=null;selectedCommunity=null;ui.neighborhood.value='';
     render();
-    status(ui['civic-layer'].value==='boards'
-      ? 'Showing official NYC community boards (2026), separate from neighborhood and electoral boundaries.'
-      : 'Showing official NYC 2020 Neighborhood Tabulation Areas.');
+    const mode=ui['civic-layer'].value;
+    status(mode==='boards'?'Showing official NYC community boards (2026).':
+      mode==='schooldistricts'?'Showing the 32 NYC geographic school districts, not attendance zones.':
+      mode==='schools'?'Showing NYSED K–12 school locations. Zoom in for pins or search by school name.':
+      'Showing official NYC 2020 Neighborhood Tabulation Areas.');
   });
   ui.borough.addEventListener('change',()=>switchBorough(ui.borough.value));
   ui['search-button'].addEventListener('click',search);
@@ -604,6 +619,7 @@ async function init(){
     wire();render();
     setMapDetail(ui['map-detail'].value);
     void loadCommunityGeography();
+    void loadEducationGeography();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
