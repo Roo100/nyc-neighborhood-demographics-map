@@ -226,6 +226,15 @@ function boardProfile(board){
   writeMeta([['Borough',board.borough],['Community board','Board '+board.number],['BoroCD',String(board.code)],['Geography','NYC DCP 2026 · 26b'],['Other districts','City Council and state legislative districts may cross this board']]);
   updateCivicContext(board.borough,board);
 }
+function focusCommunityBoard(bounds){
+  map.stop();
+  fitNYCBounds(bounds,{padding:[25,25],maxZoom:14,animate:false});
+  // Small screens otherwise squeeze irregular board shapes into an unreadable speck.
+  // The visitor can pan/zoom to inspect the full official boundary.
+  if(map.getSize().x<500 && map.getZoom()<12.2){
+    map.setView(bounds.getCenter(),12.2,{animate:false});
+  }
+}
 function showCommunityBoard(board){
   selected=null;
   selectedCommunity=board;
@@ -241,7 +250,7 @@ function showCommunityBoard(board){
     });
   }
   const featureLayer=communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===board.code);
-  if(featureLayer){featureLayer.bringToFront();map.stop();fitNYCBounds(featureLayer.getBounds(),{padding:[25,25],maxZoom:14,animate:false});}
+  if(featureLayer){featureLayer.bringToFront();focusCommunityBoard(featureLayer.getBounds());}
   status('Selected '+board.name+'. Verify current board contacts in the NYC directory; elected officials use separate boundaries.');
 }
 async function loadCommunityGeography(){
@@ -347,9 +356,8 @@ function render(){
       const target=selectedCommunity
         ? communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===selectedCommunity.code)
         : null;
-      map.stop();
-      fitNYCBounds(target?target.getBounds():communityLayer.getBounds(),
-        target?{padding:[25,25],maxZoom:14,animate:false}:{padding:[35,35],animate:false});
+      if(target)focusCommunityBoard(target.getBounds());
+      else fitNYCBounds(communityLayer.getBounds(),{padding:[35,35],animate:false});
     }
   }else{
     if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
