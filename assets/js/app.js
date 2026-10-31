@@ -1,5 +1,6 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON} from './civic.js';
+import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -24,10 +25,13 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['civic-layer','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+const ui = Object.fromEntries(['civic-layer','education-picker-field','education-picker','school-filter-field','school-type','school-search-field','school-search','school-find','board-picker-field','community-board','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
 let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
   selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
-  communityByCode=new Map(), communityLayer=null;
+  communityByCode=new Map(), communityLayer=null,
+  schoolDistricts=[],schoolDistrictByCode=new Map(),schoolDistrictLayer=null,
+  schoolPoints=[],schoolById=new Map(),schoolMarkers=null,
+  selectedSchool=null,selectedSchoolDistrict=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -145,6 +149,10 @@ function setMapDetail(mode){
     const board=communityByCode.get(parseBoroCd(layer.feature)?.code);
     if(board)layer.setStyle(communityStyle(board));
   });
+  if(schoolDistrictLayer)schoolDistrictLayer.eachLayer(layer=>{
+    const entry=schoolDistrictByCode.get(Number(layer.feature?.properties?.district));
+    if(entry)layer.setStyle(schoolDistrictStyle(entry));
+  });
   document.getElementById('street-map-note').textContent=mode==='streets'
     ? 'Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.'
     : 'Neon-only view: official NYC DCP 2020 NTA geography.';
@@ -181,7 +189,8 @@ function boroughProfile(borough){
   updateCivicContext(borough);
 }
 function switchBorough(borough){
-  selected=null;selectedCommunity=null;ui.borough.value=borough;ui.neighborhood.value='';
+  selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;
+  ui.borough.value=borough;ui.neighborhood.value='';
   render();
   const layerName=ui['civic-layer'].value==='boards'?'community boards':'neighborhoods';
   status(borough==='all'?'Showing all five NYC boroughs and their '+layerName+'.':'Exploring '+borough+' '+layerName+'.');
@@ -281,6 +290,126 @@ async function loadCommunityGeography(){
     ui['civic-layer'].disabled=false;
     document.getElementById('civic-source').textContent='Community board boundary map temporarily unavailable; official civic directories remain accessible.';
   }
+}
+function schoolDistrictStyle(district){
+  const active=selectedSchoolDistrict?.code===district.code;
+  const streets=ui['map-detail'].value==='streets';
+  const fill=Object.values(BOROUGH_COLORS)[district.code%5];
+  return {color:active?'#241039':'#472474',weight:active?4:1.7,opacity:1,
+    fillColor:active?'#C7FF00':fill,fillOpacity:streets?(active?.23:.11):(active?.72:.48)};
+}
+function schoolDistrictOverview(){
+  ui['profile-kicker'].textContent='NYC SCHOOL DISTRICT BOUNDARIES · 2026';
+  ui['detail-name'].textContent='32 NYC School Districts';
+  ui['detail-intro'].textContent='Explore community school-district boundaries from NYC Planning. These administrative districts do not establish a child’s attendance zone or school assignment.';
+  writeMeta([['Geographic school districts','32'],['Source','NYC DCP 26b · May 2026'],['School zoning','Separate elementary and middle school zones'],['Special programs','Districts 75, 79 and charter programs may operate citywide']]);
+  updateCivicContext(ui.borough.value==='all'?null:ui.borough.value);
+}
+function schoolDistrictProfile(entry){
+  ui['profile-kicker'].textContent='SCHOOL DISTRICT · NYC PLANNING';
+  ui['detail-name'].textContent='School District '+entry.code;
+  ui['detail-intro'].textContent='This is an administrative school district. It is not an individual school attendance zone. Confirm zoned schools and enrollment eligibility using NYCPS MySchools.';
+  writeMeta([['Geographic district',String(entry.code)],['Boundary vintage','NYC DCP 26b · May 2026'],['Boundary authority','Department of City Planning'],['Admissions','Check actual address in MySchools']]);
+  updateCivicContext(null);
+}
+function selectSchoolDistrict(entry){
+  selectedSchoolDistrict=entry;selected=null;selectedCommunity=null;selectedSchool=null;
+  schoolDistrictProfile(entry);
+  schoolDistrictLayer.eachLayer(layer=>{
+    const match=schoolDistrictByCode.get(Number(layer.feature.properties.district));
+    if(match)layer.setStyle(schoolDistrictStyle(match));
+  });
+  const layer=schoolDistrictLayer.getLayers().find(l=>Number(l.feature.properties.district)===entry.code);
+  if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[35,35],maxZoom:13,animate:false});}
+  ui['education-picker'].value=String(entry.code);
+  status('Showing NYC school district '+entry.code+'. School attendance zones are a separate geography.');
+}
+function schoolOverview(){
+  const visible=filterSchoolLocations(schoolPoints,ui.borough.value,ui['school-type'].value,'');
+  ui['profile-kicker'].textContent='K–12 SCHOOL LOCATIONS · NYSED GIS';
+  ui['detail-name'].textContent=ui.borough.value==='all'?'NYC K–12 Schools':ui.borough.value+' K–12 Schools';
+  ui['detail-intro'].textContent='School sites appear as pins when you zoom in, or search by school name or NYSED ID. This dataset includes public, charter and nonpublic schools; listed grades and current admission eligibility require NYCPS confirmation.';
+  writeMeta([['Matching NYC school sites',String(visible.length)],['Source','NYS Education Department / NYS GIS'],['School grades','Not verified from this point dataset'],['School assignment','Not determined by proximity or school-district polygon']]);
+  updateCivicContext(ui.borough.value==='all'?null:ui.borough.value);
+}
+function schoolProfile(school){
+  ui['profile-kicker'].textContent='K–12 SCHOOL LOCATION · NYSED';
+  ui['detail-name'].textContent=school.name;
+  ui['detail-intro'].textContent='Mapped NYSED school point (not an admissions guarantee). Verify current operating status, program grades and admission details with the school or NYCPS directory.';
+  writeMeta([['NYSED institution ID',school.id],['Borough',school.borough],
+    ['Location',[school.street,school.city,school.zip].filter(Boolean).join(', ')||'Address unavailable'],
+    ['Category',school.type],['NYSED classification',school.sourceClass||'Not specified'],['Grade span','Not available in mapped source']]);
+  updateCivicContext(school.borough);
+}
+function selectSchool(school){
+  selectedSchool=school;selectedSchoolDistrict=null;selectedCommunity=null;selected=null;
+  if(ui.borough.value!=='all'&&ui.borough.value!==school.borough){
+    ui.borough.value=school.borough;
+  }
+  schoolProfile(school);
+  map.stop();map.setView(school.coordinates,15,{animate:false});
+  refreshSchoolPins();
+  status('Mapped '+school.name+' ('+school.borough+'). See NYCPS for grade levels, programs and admissions.');
+}
+function refreshSchoolPins(){
+  if(!schoolMarkers)return;
+  schoolMarkers.clearLayers();
+  if(ui['civic-layer'].value!=='schools'||map.getZoom()<12.2)return;
+  const bounds=map.getBounds().pad(.13);
+  const matches=filterSchoolLocations(schoolPoints,ui.borough.value,ui['school-type'].value,'')
+    .filter(s=>bounds.contains(s.coordinates));
+  for(const school of matches){
+    const active=selectedSchool?.id===school.id;
+    const marker=L.circleMarker(school.coordinates,{radius:active?10:6,weight:active?3:1.8,
+      color:'#241039',fillColor:active?'#FFFFFF':(school.type==='Charter'?'#FF3B9D':school.type==='Nonpublic'?'#AF68FF':'#00D9FF'),
+      fillOpacity:1,keyboard:true});
+    marker.bindTooltip(school.name+' · '+school.type,{sticky:true,direction:'top'});
+    marker.on('click',()=>selectSchool(school));
+    marker.addTo(schoolMarkers);
+  }
+}
+function findSchool(){
+  const q=ui['school-search'].value.trim();
+  if(q.length<2){status('Enter at least two characters of a school name or an NYSED institution ID.',true);return;}
+  const possible=filterSchoolLocations(schoolPoints,ui.borough.value,ui['school-type'].value,q);
+  if(!possible.length){status('No matching K–12 school in the selected borough and type filter. Try a shorter name or All schools.',true);return;}
+  const exact=possible.filter(s=>s.name.toLowerCase()===q.toLowerCase()||s.id===q);
+  const candidates=exact.length?exact:possible;
+  if(candidates.length!==1){
+    status(candidates.length+' schools match. Add more of the name or enter the NYSED institution ID to identify one.',true);return;
+  }
+  selectSchool(candidates[0]);
+}
+async function loadEducationGeography(){
+  let districtsOK=false,schoolsOK=false;
+  try{
+    const source=await download(SCHOOL_DISTRICTS_LOCAL);
+    schoolDistricts=validateSchoolDistricts(source);
+    schoolDistrictByCode=new Map(schoolDistricts.map(x=>[x.code,x]));
+    schoolDistrictLayer=L.geoJSON(null,{
+      style:f=>schoolDistrictStyle(schoolDistrictByCode.get(Number(f.properties.district))),
+      onEachFeature:(f,layer)=>{
+        const entry=schoolDistrictByCode.get(Number(f.properties.district));
+        layer.bindTooltip('NYC School District '+entry.code,{sticky:true});
+        layer.on('click',()=>selectSchoolDistrict(entry));
+      }
+    });
+    ui['civic-layer'].querySelector('[value="schooldistricts"]').disabled=false;
+    districtsOK=true;
+  }catch(e){console.warn('School district map remains unavailable:',e);}
+  try{
+    const [source,manifest]=await Promise.all([
+      download(K12_SCHOOL_POINTS_LOCAL),download('data/schools/validation-2026.json')]);
+    schoolPoints=validateSchoolLocations(source,manifest);
+    schoolById=new Map(schoolPoints.map(s=>[s.id,s]));
+    schoolMarkers=L.layerGroup().addTo(map);
+    ui['civic-layer'].querySelector('[value="schools"]').disabled=false;
+    schoolsOK=true;
+  }catch(e){console.warn('NYSED school point map remains unavailable:',e);}
+  document.getElementById('education-source').textContent=
+    'NYC DCP school district polygons '+(districtsOK?'verified (2026)':'unavailable')+
+    '; NYSED K–12 school point locations '+(schoolsOK?'verified ('+schoolPoints.length+' records)':'unavailable')+
+    '. Administrative boundaries are not attendance zones. Confirm Fall 2026 grades/admissions with NYCPS.';
 }
 function render(){
   const borough=ui.borough.value;
