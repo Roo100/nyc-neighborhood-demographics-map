@@ -29,6 +29,10 @@
       </nav>
       <section class="controls" aria-label="Map controls">
         <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option><option value="schooldistricts" disabled>School districts · 2026</option><option value="schools" disabled>K–12 school locations</option><option value="enrollment" disabled>Party enrollment · City Council districts</option></select></div>
+        <div class="field council-picker-field" id="council-picker-field" hidden>
+          <label for="council-picker">City Council district</label>
+          <select id="council-picker" disabled><option value="">Select a district</option></select>
+        </div>
         <div class="field political-field" id="political-field" hidden>
           <label for="political-metric">2026 party enrollment · council districts</label>
           <select id="political-metric" disabled>
