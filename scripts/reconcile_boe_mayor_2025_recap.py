@@ -48,7 +48,9 @@ def main():
       else:raise ValueError("Unrecognized ballot/candidate unit: "+unit)
     county_prefix={v:k for k,v in BOE_COUNTY.items()}
     recap_counts=Counter()
+    recap_candidate_values=Counter()
     recap_ballots=Counter()
+    recap_ballot_values=Counter()
     recap_totals=defaultdict(lambda: {"total_votes":set(),"total_ballots":set(),"unrecorded":set()})
     recap_counties=Counter()
     for row in csv.reader(io.StringIO(recap_text)):
@@ -59,8 +61,12 @@ def main():
       try:val=intval(row[5])
       except (ValueError,TypeError):continue
       recap_counties[county]+=1
-      if unit in CANDIDATE_LINES:recap_counts[(county,unit)]+=1
-      if unit in BALLOT_UNITS:recap_ballots[(county,unit)]+=1
+      if unit in CANDIDATE_LINES:
+        recap_counts[(county,unit)]+=1
+        recap_candidate_values[(county,unit)]+=val
+      if unit in BALLOT_UNITS:
+        recap_ballots[(county,unit)]+=1
+        recap_ballot_values[(county,unit)]+=val
       # Do not trust duplicated metadata columns until audited.
       try:
         if len(row)>13 and row[12]=="Total Votes":
@@ -70,8 +76,62 @@ def main():
         if len(row)>15 and row[14]=="Unrecorded":
           recap_totals[county]["unrecorded"].add(intval(row[15]))
       except ValueError:pass
+    # All nine major candidate ballot lines appear once per county in the
+    # certified recap. 'Scattered' write-ins appear only as a remainder,
+    # so independently reconcile total votes and unrecorded by county.
+    for county in BOE_COUNTY:
+      meta=recap_totals[county]
+      if any(len(meta[k])!=1 for k in ("total_votes","total_ballots","unrecorded")):
+        raise ValueError("Certified recap county metadata ambiguous "+county)
+      total_votes=next(iter(meta["total_votes"]))
+      total_ballots=next(iter(meta["total_ballots"]))
+      unrecorded=next(iter(meta["unrecorded"]))
+      if total_votes+unrecorded!=total_ballots:
+        raise ValueError("Certified recap county total-vote/unrecorded reconciliation failed "+county)
+      ed_ballots=sum(by_county_ballots[(county,unit)] for unit in BALLOT_UNITS)
+      ed_votes=sum(by_county_unit[(county,unit)] for unit in CANDIDATE_LINES)
+      if ed_ballots!=total_ballots or ed_votes!=total_votes:
+        raise ValueError("ED tallies do not reconcile to certified recap "+county+
+           f": ED ballots {ed_ballots}, recap {total_ballots}, ED votes {ed_votes}, recap {total_votes}")
+      for unit in CANDIDATE_LINES:
+        if unit=="Scattered":continue
+        if recap_counts[(county,unit)]!=1 or recap_candidate_values[(county,unit)]!=by_county_unit[(county,unit)]:
+          raise ValueError(f"ED versus certified candidate-line discrepancy: {county} {unit}")
+      for unit in BALLOT_UNITS:
+        if recap_ballots[(county,unit)]!=1 or recap_ballot_values[(county,unit)]!=by_county_ballots[(county,unit)]:
+          raise ValueError(f"ED versus certified ballot-unit discrepancy: {county} {unit}")
+    citywide=Counter()
+    for (county,unit),votes in by_county_unit.items():
+      citywide[CANDIDATE_LINES[unit]]+=votes
+    candidate_ranked=sorted(citywide.items(),key=lambda x:-x[1])
+    citywide_ballots=sum(sum(by_county_ballots[(county,u)] for u in BALLOT_UNITS) for county in BOE_COUNTY)
+    citywide_votes=sum(citywide.values())
+    if citywide_votes!=2194204 or citywide_ballots!=2218647:
+      raise ValueError("Citywide certified grand totals changed unexpectedly")
+    citywide_result={
+       "status":"VERIFIED_OFFICIAL_2025_MAYOR_CITYWIDE_ONLY",
+       "election_date":"2025-11-04",
+       "certification_date":"2025-12-02",
+       "contest":"NYC Mayor — 2025 General Election (citywide)",
+       "official_ed_source":"https://www.vote.nyc/page/election-results-summary-2025",
+       "source_ed_csv_sha256":hashlib.sha256(ed).hexdigest(),
+       "source_certified_recap_sha256":recap_sha,
+       "total_ballots":citywide_ballots,
+       "total_candidate_and_write_in_votes":citywide_votes,
+       "unrecorded_ballots":citywide_ballots-citywide_votes,
+       "candidates":[{"name":name,"votes":n,"vote_share_pct":round(n/citywide_votes*100,2)} for name,n in candidate_ranked],
+       "counties":[{
+           "county":county,
+           "ballots":next(iter(recap_totals[county]["total_ballots"])),
+           "candidate_and_write_in_votes":next(iter(recap_totals[county]["total_votes"])),
+           "unrecorded":next(iter(recap_totals[county]["unrecorded"]))
+       } for county in BOE_COUNTY],
+       "geographic_resolution":"CITYWIDE_ONLY",
+       "notice":"Official mayoral votes, not party enrollment. No election-district/NTA allocation or turnout measure is asserted.",
+       "QA":"ED CSV candidate line counts and ballot units match official certified county recap exactly; fusion candidate lines combined by named candidate."
+    }
     report={
-      "status":"OFFICIAL_2025_ED_RECAP_CROSS_CHECK_PENDING",
+      "status":"OFFICIAL_2025_ED_RECAP_CROSS_CHECK_PASSED",
       "retrieved_at_utc":datetime.now(timezone.utc).isoformat(),
       "ed_source_sha256":hashlib.sha256(ed).hexdigest(),
       "recap_source_sha256":recap_sha,
@@ -101,6 +161,7 @@ def main():
       }
     }
     DEST.mkdir(parents=True,exist_ok=True)
+    (DEST/"mayor_2025_verified_citywide.json").write_text(json.dumps(citywide_result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     (DEST/"mayor_2025_recap_reconciliation_audit.json").write_text(
         json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
@@ -110,5 +171,8 @@ def main():
         "active_ED_counts":report["unique_active_EDs"],
         "combined_ED_count":len(combined_keys)
     },ensure_ascii=False))
-    print("HOLD: audit report created, no election values displayed on site.")
+    print("CERTIFIED_MAYOR_CITYWIDE "+json.dumps({
+        "ballots":citywide_ballots,"votes":citywide_votes,"unrecorded":citywide_ballots-citywide_votes,
+        "candidates":citywide_result["candidates"]},ensure_ascii=False))
+    print("PASS: citywide results verified; precinct/NTA election maps remain on hold pending historical ED geography.")
 if __name__=="__main__":main()
