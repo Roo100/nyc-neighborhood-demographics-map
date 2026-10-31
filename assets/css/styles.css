@@ -371,3 +371,38 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 @media(min-width:901px){
   #map{height:900px}
 }
+
+
+/* A street-grid selection resolves to an official 2026 board polygon, not an NTA. */
+.point-board-panel{
+  border:3px solid #241039;background:#e7faff;border-radius:12px;
+  padding:15px 14px;margin:20px 0;box-shadow:4px 4px 0 #241039;
+}
+.point-board-panel h3{font-size:1rem;font-weight:900;letter-spacing:.015em;margin:0 0 9px;color:#241039}
+.point-board-panel p{font-size:.88rem;line-height:1.5;margin:8px 0;color:#241039}
+.point-board-panel[data-lookup-status="board"]{background:#eaffc6}
+.point-board-panel[data-lookup-status="joint_interest"],
+.point-board-panel[data-lookup-status="boundary"]{background:#fff0cb}
+.point-board-panel[data-lookup-status="outside"],
+.point-board-panel[data-lookup-status="unavailable"]{background:#f3efff}
+.point-board-panel .point-board-coordinates{font:700 .72rem/1.4 ui-monospace,monospace;color:#47355e;overflow-wrap:anywhere}
+.point-board-center{
+  border:2px solid #241039!important;border-radius:8px!important;
+  color:#241039!important;background:#C7FF00!important;
+  padding:8px 10px!important;min-height:39px;
+  font-size:.81rem;font-weight:900;box-shadow:2px 3px 0 #241039;
+  margin:4px 0 11px;
+}
+.point-board-directory{display:block;font-size:.82rem;font-weight:800;
+  color:#4c188b;text-decoration:underline;text-underline-offset:3px}
+.grid-map-click-marker{background:transparent;border:0}
+.grid-map-click-marker-symbol{
+  display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
+  border:3px solid #241039;background:#C7FF00;color:#241039;
+  box-shadow:3px 3px 0 #FF3B9D;font-size:18px;font-weight:900;
+  pointer-events:none;
+}
+@media(max-width:600px){
+  .point-board-panel{padding:13px 12px}
+  .point-board-center{font-size:.76rem;width:100%}
+}
