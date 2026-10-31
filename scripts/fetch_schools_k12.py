@@ -40,25 +40,30 @@ def prepare_districts(raw):
     features=raw.get("features")
     if raw.get("type")!="FeatureCollection" or not isinstance(features,list) or len(features)!=33:
         raise ValueError("Expected 33 official NYC school district polygons; actual: "+str(len(features) if isinstance(features,list) else "invalid"))
-    result=[], 
-    result=[]
-    ids=set()
+    # NYC DCP's 33 raw features may contain multiple features for a single
+    # district. Do not count physical polygon fragments as distinct districts.
+    grouped={}
+    duplicates=Counter()
     for feature in features:
         p=feature.get("properties") or {}
         n=p.get("schooldist",p.get("SchoolDist"))
         try: code=int(n)
         except (ValueError,TypeError): raise ValueError("Invalid school district identifier "+str(n))
-        if code in ids or not (1<=code<=99):
-            raise ValueError("Duplicate/out-of-range school district: "+str(code))
-        ids.add(code)
+        if not (1<=code<=99):
+            raise ValueError("Out-of-range school district: "+str(code))
         g=feature.get("geometry")
         if g is None or g.get("type") not in ("Polygon","MultiPolygon") or not g.get("coordinates"):
             raise ValueError("Invalid district geometry for "+str(code))
-        result.append({"type":"Feature","properties":{"district":code},"geometry":g})
-    if not set(range(1,33)).issubset(ids):
-        raise ValueError("Official geography missing one of NYC districts 1–32")
-    print("NYC_DCP_SCHOOL_DISTRICT_IDS",sorted(ids),flush=True)
-    return {"type":"FeatureCollection","features":sorted(result,key=lambda r:r["properties"]["district"])},sorted(ids)
+        children=[g["coordinates"]] if g["type"]=="Polygon" else g["coordinates"]
+        if code in grouped: duplicates[code]+=1
+        grouped.setdefault(code,[]).extend(children)
+    ids=sorted(grouped)
+    print("NYC_DCP_SCHOOL_DISTRICT_IDS",ids,"SPLIT_FEATURE_COUNTS",dict(duplicates),flush=True)
+    if set(ids)!=set(range(1,33)):
+        raise ValueError("Expected 32 unique NYC geographic district numbers 1–32. Found "+str(ids))
+    result=[{"type":"Feature","properties":{"district":code},
+       "geometry":{"type":"MultiPolygon","coordinates":grouped[code]}} for code in ids]
+    return {"type":"FeatureCollection","features":result},ids
 
 def classify_type(p):
     x=(" ".join(str(p.get(k) or "") for k in ("INST_TYPE_DESC","INSTSUBTYPDESC","RECORD_TYPE_DESC"))).lower()
@@ -136,7 +141,7 @@ def main():
         "validation_status":"STAGED_FOR_REVIEW_NOT_PUBLISHED",
         "checked_at_utc":datetime.now(timezone.utc).isoformat(),
         "district_source":DISTRICT_URL,"district_dataset":"NYC DCP 2026 26b 8ugf-3d8u",
-        "district_count":len(district_ids),"district_codes":district_ids,
+        "district_count":len(district_ids),"district_source_feature_count":len(dcp["features"]),"district_codes":district_ids,
         "district_source_sha256":hashlib.sha256(source_bytes).hexdigest(),
         "district_pinned_sha256":d_hash,
         "school_source":SCHOOL_LAYER,"school_provider":"NYS ITS Geohub based on NYSED",
