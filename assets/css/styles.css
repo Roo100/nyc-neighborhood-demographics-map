@@ -276,3 +276,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
    background:#f3efff;box-shadow:none;padding:7px 11px;font-size:10px}
  .leaflet-control-attribution{font-size:9px!important;max-width:100%}
 }
+
+
+/* Community boards and citywide civic directory: same NYC POP visual language. */
+.civic-layer-field select{font-weight:900;background:#e8ffbc}
+.civic-panel{
+  margin:24px 0 20px;padding:18px 17px 16px;
+  border:3px solid #241039;border-radius:13px;
+  background:#f4edff;box-shadow:5px 5px 0 #241039;
+}
+.civic-panel h3{font-family:Impact,"Arial Black",system-ui,sans-serif;font-size:1.3rem;
+  letter-spacing:.01em;text-transform:uppercase;margin:0 0 10px;color:#241039}
+.civic-panel p{font-size:.9rem;line-height:1.5;margin:8px 0}
+.civic-panel strong{color:#241039}
+.civic-panel .borough-president-line{padding:9px 11px;background:#c7ff00;
+  border:2px solid #241039;border-radius:8px}
+.civic-links{display:grid;grid-template-columns:1fr;gap:7px;margin-top:13px}
+.civic-links a{display:block;padding:9px 10px;color:#241039;text-decoration:underline;
+  text-decoration-thickness:1.5px;text-underline-offset:3px;
+  background:#fff;border:2px solid #241039;border-radius:8px;
+  font-size:.85rem;font-weight:800}
+.civic-links a:hover{background:#00d9ff}
+.civic-date-note{font-size:.72rem!important;color:#554b6c!important}
+.community-layer-note{font-weight:800;color:#241039}
+@media(max-width:600px){.civic-panel{padding:15px 13px}.civic-links a{font-size:13px}}
