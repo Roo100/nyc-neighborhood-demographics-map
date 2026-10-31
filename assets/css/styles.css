@@ -649,3 +649,62 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
  .mayor-election-totals strong{font-size:17px}
  .mayor-election-totals span{font-size:10px}
 }
+
+
+/* October 31 layout refinement: compact, aligned map and profile.
+   These rules intentionally override the earlier experimental layout sizes. */
+.shell{max-width:1360px;margin-inline:auto;padding:clamp(10px,1.6vw,22px)}
+.masthead{padding:22px clamp(20px,2.5vw,34px)}
+.masthead h1{font-size:clamp(2rem,3.1vw,3.1rem);margin:5px 0 8px}
+.masthead p{font-size:14px;line-height:1.45;max-width:850px}
+.borough-links{padding:10px 18px;gap:8px}
+.borough-links button{min-height:36px;padding:6px 12px}
+.controls{padding:14px 18px;gap:10px;align-items:end}
+.controls .field{min-width:145px;flex:0 1 185px}
+.controls .search-field{flex:1 1 220px;min-width:180px}
+.controls select,.controls input,.controls button{min-height:40px;padding:8px 10px}
+.workspace{
+  display:grid;
+  grid-template-columns:minmax(0, 1.65fr) minmax(320px, 1fr);
+  align-items:start;
+  min-height:0;
+}
+.map-frame{min-width:0;align-self:start;overflow:hidden}
+#map{height:clamp(390px,39vw,505px);width:100%}
+.details{min-width:0;padding:19px 22px;align-self:start}
+.details h2{font-size:clamp(22px,2vw,29px);margin:8px 0 10px}
+.details dl{margin:15px 0;gap:8px 12px}
+.map-key{top:12px;left:12px;bottom:auto;max-width:155px;padding:8px 10px;line-height:1.5;font-size:11px}
+.map-key .key-title{font-size:14px}
+.map-key .key-note{font-size:10px;line-height:1.25}
+#map .leaflet-control-scale{margin:0 0 12px 12px}
+.street-map-note{right:10px;bottom:22px;max-width:49%;font-size:9px}
+.civic-panel{grid-column:1/-1}
+@media(max-width:900px){
+  .workspace{grid-template-columns:1fr;align-items:start}
+  .map-frame{border-right:0;border-bottom:3px solid #241039}
+  #map{height:clamp(340px,55vw,455px)}
+  .details{padding:18px}
+  .street-map-note{max-width:55%}
+}
+@media(max-width:600px){
+  .shell{padding:8px}
+  .masthead{padding:17px 15px}
+  .masthead h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .borough-links{padding:10px;gap:7px}
+  .controls{padding:11px;gap:9px}
+  .controls .field,.controls .search-field{flex:1 1 100%;min-width:0}
+  #map{height:345px}
+  .map-key{
+    position:static;inset:auto;width:100%;max-width:none;
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:10px;row-gap:2px;padding:9px 12px;
+    box-shadow:none;border-left:0;border-right:0;border-bottom:0;
+    border-radius:0
+  }
+  .map-key .key-title,.map-key .key-note{grid-column:1/-1}
+  .street-map-note{position:static;width:100%;max-width:none;margin:0}
+  .details{padding:15px}
+  .details h2{font-size:24px}
+  #map .leaflet-control-scale{margin:0 0 10px 10px}
+}
