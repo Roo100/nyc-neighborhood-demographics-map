@@ -57,3 +57,79 @@ export function validateCommunityGeoJSON(source){
   if(boards.length!==59||jointInterest.length!==12)throw new Error('Expected 59 actual community boards plus 12 joint-interest areas');
   return {boards,jointInterest};
 }
+
+
+// Point-in-polygon lookup uses *only* the official pinned 2026 community
+// district and Joint Interest Area geometries (GeoJSON longitude, latitude).
+// NTAs, ZIP codes, nearest board centroid or borough membership are NOT valid
+// substitutes for a location-based community board assignment.
+function ringStatus([lon,lat],ring){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const [xi,yi]=ring[i], [xj,yj]=ring[j];
+    const cross=(lon-xi)*(yj-yi)-(lat-yi)*(xj-xi);
+    const scale=Math.max(1,Math.abs(xj-xi),Math.abs(yj-yi));
+    if(Math.abs(cross)<=1e-10*scale &&
+      lon>=Math.min(xi,xj)-1e-10&&lon<=Math.max(xi,xj)+1e-10&&
+      lat>=Math.min(yi,yj)-1e-10&&lat<=Math.max(yi,yj)+1e-10){
+      return 'boundary';
+    }
+    if(((yi>lat)!==(yj>lat)) &&
+      lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)inside=!inside;
+  }
+  return inside?'inside':'outside';
+}
+function polygonStatus(point,rings){
+  if(!rings?.length)return 'outside';
+  const outer=ringStatus(point,rings[0]);
+  if(outer!=='inside')return outer;
+  for(const ring of rings.slice(1)){
+    const hole=ringStatus(point,ring);
+    if(hole==='inside')return 'outside';
+    if(hole==='boundary')return 'boundary';
+  }
+  return 'inside';
+}
+function polygonBounds(rings){
+  let minLon=Infinity,minLat=Infinity,maxLon=-Infinity,maxLat=-Infinity;
+  for(const ring of rings){
+    for(const [lon,lat] of ring){
+      minLon=Math.min(minLon,lon);minLat=Math.min(minLat,lat);
+      maxLon=Math.max(maxLon,lon);maxLat=Math.max(maxLat,lat);
+    }
+  }
+  return [minLon,minLat,maxLon,maxLat];
+}
+export function indexCommunityDistricts(records){
+  if(!Array.isArray(records)||!records.length)throw new Error('Community geographic records not loaded');
+  return records.map(record=>{
+    const geometry=record?.feature?.geometry;
+    if(!['Polygon','MultiPolygon'].includes(geometry?.type))
+      throw new Error('Community district missing polygon geometry');
+    const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
+    return {record,parts:polygons.map(rings=>({rings,bounds:polygonBounds(rings)}))};
+  });
+}
+export function lookupCommunityDistrict(index,latitude,longitude){
+  if(!Array.isArray(index)||!index.length)return {status:'unavailable'};
+  if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||
+    latitude<-90||latitude>90||longitude<-180||longitude>180)return {status:'invalid'};
+  const point=[longitude,latitude], hits=[];
+  for(const entry of index){
+    let result='outside';
+    for(const part of entry.parts){
+      const [x0,y0,x1,y1]=part.bounds;
+      if(longitude<x0-1e-10||longitude>x1+1e-10||
+        latitude<y0-1e-10||latitude>y1+1e-10)continue;
+      const value=polygonStatus(point,part.rings);
+      if(value==='inside'){result='inside';break;}
+      if(value==='boundary')result='boundary';
+    }
+    if(result!=='outside')hits.push({record:entry.record,relation:result});
+  }
+  if(!hits.length)return {status:'outside'};
+  if(hits.length>1||hits.some(x=>x.relation==='boundary'))
+    return {status:'boundary',candidates:hits.map(x=>x.record)};
+  const record=hits[0].record;
+  return {status:record.type==='board'?'board':'joint_interest',record};
+}
