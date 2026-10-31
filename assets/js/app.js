@@ -1062,6 +1062,16 @@ function wire(){
     if(selected)showACSProfile(selected);
     status('Viewing '+ACS_LAYER_OPTIONS[ui['demographic-layer'].value].label+'. Gray areas have missing or unreliable ACS estimates.');
   });
+  ui['political-metric'].addEventListener('change',()=>{
+    if(!enrollmentReady||!councilLayer)return;
+    updatePartyLegend();
+    councilLayer.eachLayer(layer=>{
+      const entry=legislativeLookup.council.records.find(x=>x.code===Number(layer.feature.properties.district));
+      if(entry)layer.setStyle(councilStyle(entry));
+    });
+    if(selectedCouncil)showCouncilProfile(selectedCouncil);
+    status('Showing '+PARTY_OPTIONS[ui['political-metric'].value]+'. Source: active registration by City Council district as of February 20, 2026; not votes cast.');
+  });
   ui['community-board'].addEventListener('change',()=>{
     const found=communityByCode.get(Number(ui['community-board'].value));
     if(found)showCommunityBoard(found);
@@ -1089,10 +1099,12 @@ function wire(){
   });
   ui['civic-layer'].addEventListener('change',()=>{
     resetMapPointLookup();
-    selected=null;selectedCommunity=null;ui.neighborhood.value='';
-    render();
+    selected=null;selectedCommunity=null;selectedCouncil=null;ui.neighborhood.value='';
     const mode=ui['civic-layer'].value;
-    status(mode==='boards'?'Showing official NYC community boards (2026).':
+    if(mode==='enrollment')ui.borough.value='all';
+    render();
+    status(mode==='enrollment'?'Showing official February 2026 party enrollment by City Council district, not neighborhood election results.':
+      mode==='boards'?'Showing official NYC community boards (2026).':
       mode==='schooldistricts'?'Showing the 32 NYC geographic school districts, not attendance zones.':
       mode==='schools'?'Showing NYSED K–12 school locations. Zoom in for pins or search by school name.':
       'Showing official NYC 2020 Neighborhood Tabulation Areas.');
