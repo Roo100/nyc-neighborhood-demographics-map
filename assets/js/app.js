@@ -245,8 +245,10 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   disclaimer.className='nyc-pop-info-disclaimer';
   disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
   root.append(disclaimer);
-  L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,autoPan:true,
-    autoPanPaddingTopLeft:[30,30],autoPanPaddingBottomRight:[30,40]})
+  const popupMaxHeight=Math.max(190,Math.min(350,map.getSize().y-100));
+  L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,
+    maxHeight:popupMaxHeight,keepInView:true,autoPan:true,
+    autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
     .setLatLng(latlng).setContent(root).openOn(map);
 }
 function identifyCommunityAtPoint(latlng,neighborhood=null){
