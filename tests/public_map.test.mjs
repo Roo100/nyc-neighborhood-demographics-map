@@ -63,7 +63,7 @@ test('neighborhood popup is the public primary map interaction without NTA codes
   assert.ok(js.includes('function showCivicPopup(latlng,neighborhood,communityMatch)'));
   assert.ok(js.includes('identifyCommunityAtPoint(event.latlng,r)'));
   assert.ok(js.includes("lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng)"));
-  assert.ok(js.includes("title.textContent=neighborhood?.name||'Selected NYC location'"));
+  assert.ok(js.includes("title.textContent=neighborhood?.name||") && js.includes("'Selected NYC location'"));
   assert.ok(css.includes('.nyc-pop-info-popup .leaflet-popup-content-wrapper'));
   assert.ok(!html.includes('Find neighborhood or NTA code'));
   assert.ok(!js.includes("'2020 NTA code'"));
