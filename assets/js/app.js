@@ -251,7 +251,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   // than stacks on top of, the previous card.
   map.closePopup();
   L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,
-    maxHeight:popupMaxHeight,keepInView:true,autoPan:true,
+    maxHeight:popupMaxHeight,autoPan:true,
     autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
     .setLatLng(latlng).setContent(root).openOn(map);
 }
