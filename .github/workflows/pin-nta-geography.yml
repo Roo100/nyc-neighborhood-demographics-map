@@ -31,12 +31,16 @@ jobs:
         run: python scripts/validate_geography.py data/nta2020.geojson > data/nta2020-validation.json
       - name: Display validation summary
         run: cat data/nta2020-validation.json
+      - name: Download and validate official 2020 Census tract to NTA crosswalk
+        run: python scripts/fetch_crosswalk.py
+      - name: Test NTA loading, borough filters, search and special-purpose handling
+        run: node --test tests/*.test.mjs
       - name: Commit versioned validated snapshot only on change
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/nta2020.geojson data/nta2020-validation.json
+          git add data/nta2020.geojson data/nta2020-validation.json data/tract_to_nta2020.csv data/tract_to_nta2020-validation.json
           if git diff --cached --quiet; then
             echo "Snapshot unchanged; no commit."
           else
