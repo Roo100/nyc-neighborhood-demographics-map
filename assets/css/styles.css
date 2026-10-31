@@ -303,3 +303,34 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 
 [hidden]{display:none!important}
 .community-board-field select{min-width:190px;background:#fff4c4;font-weight:800}
+
+
+/* Full-width civic section under the two-column map and district profile. */
+.civic-panel{
+  grid-column:1/-1; margin:0; padding:22px 25px;
+  background:#f4edff; border:0;border-top:4px solid #241039;
+  border-radius:0;box-shadow:none;
+}
+.civic-panel h3{font-size:1.5rem}
+.civic-panel .borough-president-line{
+  display:inline-block;max-width:100%;margin:8px 0;padding:8px 14px
+}
+.civic-panel .civic-links{
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0
+}
+.civic-panel .civic-links a{
+  display:flex;align-items:center;min-height:58px;padding:12px 13px;
+  font-size:14px;text-decoration:none;box-shadow:2px 3px 0 #241039
+}
+.civic-panel .civic-links a:hover{text-decoration:underline}
+.civic-panel .civic-date-note{font-size:12px!important;max-width:1050px}
+.geography-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.geography-links a{font-size:12px}
+@media(max-width:900px){
+  .civic-panel .civic-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .civic-panel{padding:17px 14px}
+  .civic-panel .civic-links{grid-template-columns:1fr;gap:7px}
+  .civic-panel .civic-links a{min-height:42px;font-size:13px;padding:9px 11px}
+}
