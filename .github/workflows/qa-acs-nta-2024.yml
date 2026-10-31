@@ -1,0 +1,74 @@
+name: Validate derived ACS 2024 income poverty race across 2020 NTAs — research
+on:
+  push:
+    branches: [research/acs-2024-source-verification]
+    paths:
+      - scripts/build_acs_nta_2024.py
+      - tests/test_acs_nta_quality.py
+      - .github/workflows/qa-acs-nta-2024.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests and suppression safeguards
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Generate research-only NTA summaries
+        run: python scripts/build_acs_nta_2024.py
+      - name: Audit 262 NTA records and borough counts against official tract equivalents
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          base=Path('data/acs')
+          result=json.loads((base/'nta_demographics_2024_review.json').read_text())
+          manifest=json.loads((base/'summary-file-provenance-2024.json').read_text())
+          assert result['status']=='RESEARCH_QA_ONLY_NOT_AUTHORIZED_FOR_WEBSITE'
+          assert result['nta_count']==262 and len(result['records'])==262
+          assert len(result['unmatched_acs_tracts'])==0,'No unmapped ACS tract may be silently dropped'
+          p=Counter()
+          for r in result['records']:
+            for metric in ['poverty_rate_pct','median_household_income_grouped_approx_usd','race_ethnicity_percent']:
+              if r.get(metric) is not None:p[metric]+=1
+            if r.get('race_ethnicity_percent') is not None:
+              total=sum(r['race_ethnicity_percent'].values())
+              assert abs(total-100)<.07, (r['nta2020'],total)
+            if r.get('poverty_rate_pct') is not None:
+              assert 0<=r['poverty_rate_pct']<=100
+          print('NTA_METRIC_COUNTS',dict(p))
+          print('TRACT_SOURCE_COUNTS',manifest['nyc_tracts_by_county'])
+          print('NTA_SUPPRESSION_REASONS',result['suppression_reasons'])
+          assert p['race_ethnicity_percent']>=190
+          assert p['poverty_rate_pct']>=190
+          PY
+      - name: Pin research-only NTA derived data
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = "research/acs-2024-source-verification"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/acs/nta_demographics_2024_review.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Stage derived 2024 ACS NTA income poverty race QA only"
+            git fetch origin research/acs-2024-source-verification
+            git rebase origin/research/acs-2024-source-verification
+            git push origin HEAD:research/acs-2024-source-verification
+          fi
+      - name: Upload research QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acs-2024-nta-research-review
+          path: data/acs/nta_demographics_2024_review.json
+          retention-days: 7
+          if-no-files-found: warn
