@@ -7,11 +7,18 @@ const js=readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=readFileSync(new URL('../assets/css/styles.css',import.meta.url),'utf8');
 
-test('city-only overview removes external street basemap',()=>{
+test('NYC-only street view renders roads with official land mask and retains comic-only option',()=>{
   assert.ok(js.includes("map=L.map('map'"));
-  assert.ok(!js.includes('L.tileLayer('));
-  assert.ok(!js.includes('tile.openstreetmap.org'));
-  assert.ok(css.includes('#map,.leaflet-container{background:#e7f1f5}'));
+  assert.ok(js.includes("L.tileLayer(STREETS_URL"));
+  assert.ok(js.includes("https://tile.openstreetmap.org/{z}/{x}/{y}.png"));
+  assert.ok(js.includes("function createCityMatte(features)"));
+  assert.ok(js.includes("ctx.fill('evenodd')"));
+  assert.ok(js.includes("ctx.globalCompositeOperation='destination-out'"));
+  assert.ok(js.includes("outsideCityMask=createCityMatte(features)"));
+  assert.ok(html.includes('<option value="streets" selected>Streets + grid</option>'));
+  assert.ok(html.includes('<option value="comic">Neon-only</option>'));
+  assert.ok(js.includes("attribution:'&copy;"));
+  assert.ok(css.includes('.leaflet-control-attribution'));
 });
 
 test('each of five official boroughs has an accessible direct control',()=>{
