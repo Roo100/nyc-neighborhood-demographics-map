@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pin official NYC DCP 2020 Census Tract → 2020 NTA equivalency.
 
-Official source: NYC Open Data hm78-6dwm. Never infer tract assignment from
+Official source: NYC Open Data hm78-6dwm (field ntacode). Never infer tract assignment from
 centroids, postal ZIPs, precincts or NTA-code prefixes.
 """
 import csv
@@ -31,7 +31,7 @@ def build(rows, nta_codes):
     seen = set()
     for row in rows:
         geoid = required(row, "geoid")
-        nta = required(row, "nta2020")
+        nta = required(row, "ntacode")
         if len(geoid) != 11 or not geoid.isdigit() or not geoid.startswith("36"):
             raise ValueError(f"Unexpected Census tract GEOID: {geoid!r}")
         if geoid in seen:
