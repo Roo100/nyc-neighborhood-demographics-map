@@ -60,3 +60,21 @@ Official operational, admissions, zoning and grade-level checks:
 - [NYCPS school system data, including public and charter totals](https://www.schools.nyc.gov/about-us/reports/nycps-data-at-a-glance)
 
 **Pending before calling individual schools 'current':** exact-source code or address crosswalk to verified NYCPS Fall 2026 records; remove closed facilities; verify school grades/grade spans and public/charter/nonpublic categorization; add official elementary/middle attendance zones separately. Do not derive school zoning or a student's admissions eligibility from a district polygon, school marker, NTA, or proximity alone. No student-level data is collected.
+
+
+## Identify the community board from a selected street-grid point
+
+**Implemented in draft PR #5:** Clicking the NYC POP! map or using **Identify board at map center** checks that exact geographic point against the **pinned DCP 2026 community district GeoJSON**. Longitude/latitude order is carefully maintained, and the lookup uses a bounding-box index plus a true point-in-polygon check on each polygon (including interior holes and multipart geometries). It **does not** guess a community board from a neighborhood name, NTA, nearest building, school location, ZIP code or borough alone.
+
+The result card distinguishes:
+- **Matched community board:** official board number, borough name, and BoroCD for the clicked point.
+- **Joint Interest Area:** officially mapped area without a regular community-board designation; do not display an invented board.
+- **Boundary point:** ambiguous on one or multiple adjoining district outlines; direct visitors to the official NYC directory to confirm their street address.
+- **Outside/uncovered point:** do not assign a board.
+- **Geography not loaded:** show a provisional unavailable message, and re-check automatically after verified data loads.
+
+The selected point is marked on the map by a bright comic target symbol. The related board result is deliberately **separate from the NTA, community-board, or K–12 school profile**, since the selected map location may be different from the current profile. The control works without accessing the user's location, entering their address, or sending map coordinates to an external geocoding service. NYC street tiles remain from OpenStreetMap, but the **board classification comes solely from official NYC Planning data**.
+
+Tests exercise two adjacent board polygons, a joint-interest polygon with a hole, boundary ambiguity, a real Bronx Community Board 1 interior point, direct map clicks, and keyboard map-center selection on desktop and mobile.
+
+This is a point-based **map guide**, not a legally authoritative geocoder or guaranteed street address assignment. Users should confirm unusual boundary locations and real mailing addresses through NYC government.
