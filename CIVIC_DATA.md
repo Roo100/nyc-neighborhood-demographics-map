@@ -42,3 +42,21 @@ This addition does not alter the original `Roo100/nyc-shootings-map`. The approv
 Each layer should track source organization, geographic edition/effective period, fetch date and source hash, polygon count, unmatched areas, current-officeholder check date, and whether it is live or versioned. Missing/suppressed statistics are **not zero**. Geographic crosswalks must use official published equivalencies or documented weighted allocation, not visual assumptions.
 
 **Publication gate:** QA and browser acceptance of official 59-board overlay, keyboard board picker, 2020 NTA return, five borough filters, street layer, mobile layout, and absence of unsourced official assignments.
+
+
+## K–12 Schools and Education Districts — new review layer
+
+Official NYC Planning school-district geography: [May 2026 DCP School Districts, 8ugf-3d8u](https://data.cityofnewyork.us/d/8ugf-3d8u). The official Socrata service returned **33 polygon features covering 32 unique geographic districts (1–32)**; district 10 is split across two source features. Our `fetch_schools_k12.py` joins multipart features by the *published school district code*, not by a guessed borough or NTA crosswalk. School administrative districts **are not elementary/middle attendance zones**, and K–12 citywide programs may not follow the geographic district pattern.
+
+Official school point geography: [New York State Geohub — NYSED Schools K–12, feature layer 0](https://nysgeohub.ny.gov/arcgis/rest/services/Education/NYS_Schools/FeatureServer/0). Initial GIS extraction, dated October 31, 2026, returned **2,944 NYC school point records** tagged to the five NYC counties (Bronx, Kings, New York, Queens, Richmond): 1,590 Public, 425 Charter, 830 Nonpublic, 99 Unclassified based on the source's institution/subtype fields. **These are extracted GIS records, not verified counts of currently operational NYCPS schools, nor admission or performance recommendations.** The underlying NYSED GIS source does not expose reliable K–12 grade span, and the categories may not align with NYCPS's reported charter/public counts.
+
+Source archive and validation are versioned as `data/schools/school-districts-2026.geojson`, `data/schools/k12-schools-nysed.geojson`, and `data/schools/validation-2026.json`. The extraction script rejects missing or duplicate institution identifiers, invalid points, non-NYC county names, unexpected district counts, and impossible GPS coordinates; the manifest stores source URLs, observation date, counts and SHA-256 digests.
+
+School pins are zoom-sensitive to avoid saturating the full-city map. Users can filter by borough and published school category or search a name or NYSED institution code. The search displays location and validated category, **not an inferred school assignment**. Clicking a district highlights actual DCP 2026 polygons, but no institution is automatically matched to a school district from its NYSED code (administrative district and physical district may differ).
+
+Official operational, admissions, zoning and grade-level checks:
+- [NYCPS Fall 2026 elementary, middle, high directories](https://infohub.nyced.org/reports/admissions-and-enrollment/directory-data)
+- [MySchools school search and admissions](https://www.myschools.nyc/en/)
+- [NYCPS school system data, including public and charter totals](https://www.schools.nyc.gov/about-us/reports/nycps-data-at-a-glance)
+
+**Pending before calling individual schools 'current':** exact-source code or address crosswalk to verified NYCPS Fall 2026 records; remove closed facilities; verify school grades/grade spans and public/charter/nonpublic categorization; add official elementary/middle attendance zones separately. Do not derive school zoning or a student's admissions eligibility from a district polygon, school marker, NTA, or proximity alone. No student-level data is collected.
