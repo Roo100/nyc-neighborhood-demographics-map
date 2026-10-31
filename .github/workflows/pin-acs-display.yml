@@ -1,0 +1,40 @@
+name: Pin source-gated 2024 ACS NTA display estimates
+on:
+  push:
+    branches: [feature/acs-2024-demographic-map]
+    paths:
+      - scripts/export_acs_2024_display.py
+      - .github/workflows/pin-acs-display.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Filter official source-derived NTA estimates by data quality and uncertainty
+        run: python scripts/export_acs_2024_display.py
+      - name: Pin research-reviewed display file to isolated branch only
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = 'feature/acs-2024-demographic-map'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/acs/nta_display_2024.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin quality-gated ACS derived NTA map data"
+            for attempt in 1 2 3 4 5; do
+              git fetch origin feature/acs-2024-demographic-map
+              git rebase origin/feature/acs-2024-demographic-map
+              if git push origin HEAD:feature/acs-2024-demographic-map; then exit 0; fi
+              sleep 3
+            done
+            exit 1
+          fi
