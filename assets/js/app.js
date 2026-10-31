@@ -1,5 +1,5 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
-import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON} from './civic.js';
+import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict} from './civic.js';
 import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
@@ -31,7 +31,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   communityByCode=new Map(), communityLayer=null,
   schoolDistricts=[],schoolDistrictByCode=new Map(),schoolDistrictLayer=null,
   schoolPoints=[],schoolById=new Map(),schoolMarkers=null,
-  selectedSchool=null,selectedSchoolDistrict=null;
+  selectedSchool=null,selectedSchoolDistrict=null,
+  communitySpatialIndex=null,selectedMapPoint=null,mapPointMarker=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -165,6 +166,47 @@ function writeMeta(pairs){
     ui['detail-meta'].append(dt,dd);
   }
 }
+
+function resetMapPointLookup(){
+  selectedMapPoint=null;
+  if(mapPointMarker){map.removeLayer(mapPointMarker);mapPointMarker=null;}
+  document.getElementById('point-board-result').textContent=
+    'Click a street or place on the map to identify its community board from official 2026 boundaries.';
+  document.getElementById('point-board-coordinates').textContent='';
+  document.getElementById('point-board-panel').dataset.lookupStatus='idle';
+}
+function identifyCommunityAtPoint(latlng){
+  if(!latlng||!Number.isFinite(latlng.lat)||!Number.isFinite(latlng.lng))return;
+  selectedMapPoint={lat:latlng.lat,lng:latlng.lng};
+  if(mapPointMarker)map.removeLayer(mapPointMarker);
+  mapPointMarker=L.marker(selectedMapPoint,{
+    interactive:false,keyboard:false,zIndexOffset:500,
+    icon:L.divIcon({className:'grid-map-click-marker',
+      html:'<span class="grid-map-click-marker-symbol" aria-hidden="true">✚</span>',
+      iconSize:[32,32],iconAnchor:[16,16]})
+  }).addTo(map);
+  document.getElementById('point-board-coordinates').textContent=
+    'Selected map point: '+latlng.lat.toFixed(5)+'°, '+latlng.lng.toFixed(5)+'°';
+  const match=lookupCommunityDistrict(communitySpatialIndex,latlng.lat,latlng.lng);
+  const panel=document.getElementById('point-board-panel'),output=document.getElementById('point-board-result');
+  panel.dataset.lookupStatus=match.status;
+  if(match.status==='board'){
+    output.textContent=match.record.name+' (BoroCD '+match.record.code+'). This location falls within its mapped 2026 community district.';
+  }else if(match.status==='joint_interest'){
+    output.textContent=match.record.name+' (BoroCD '+match.record.code+
+      '). This is an official Joint Interest Area, not an ordinary residential community board.';
+  }else if(match.status==='boundary'){
+    const names=match.candidates.map(x=>x.name).join(' / ');
+    output.textContent='This point is on a mapped district boundary'+
+      (names?': '+names:'')+'. Verify the exact address with the NYC community board directory; no single board is assigned here.';
+  }else if(match.status==='outside'){
+    output.textContent='No community district polygon covers the selected point. It may be water or outside mapped NYC community districts.';
+  }else if(match.status==='unavailable'){
+    output.textContent='Community board boundaries are still loading or unavailable. The map will recheck this point if official geography loads.';
+  }else{
+    output.textContent='This map location cannot be checked. Select a valid point in NYC.';
+  }
+}
 function updateCivicContext(borough, board=null){
   ui['borough-president'].textContent=borough?BOROUGH_PRESIDENTS[borough]:'Select a borough';
   ui['civic-context'].textContent=board
@@ -189,6 +231,7 @@ function boroughProfile(borough){
   updateCivicContext(borough);
 }
 function switchBorough(borough){
+  resetMapPointLookup();
   selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;
   ui.borough.value=borough;ui.neighborhood.value='';
   render();
@@ -268,6 +311,7 @@ async function loadCommunityGeography(){
     try{source=await download(COMMUNITY_LOCAL);origin='pinned 2026 DCP snapshot';}
     catch(_){source=await download(COMMUNITY_REMOTE);origin='NYC Open Data live fallback';}
     const valid=validateCommunityGeoJSON(source);
+    communitySpatialIndex=indexCommunityDistricts([...valid.boards,...valid.jointInterest]);
     communityBoards=valid.boards;
     communityByCode=new Map(communityBoards.map(b=>[b.code,b]));
     communityLayer=L.geoJSON(null,{
@@ -283,12 +327,14 @@ async function loadCommunityGeography(){
     ui['civic-layer'].disabled=false;
     ui['civic-layer'].title='Choose 2020 NTAs or 59 verified 2026 community boards ('+origin+')';
     document.getElementById('civic-source').textContent='Community districts: DCP 2026, 59 boards + 12 non-board special areas. '+origin+'.';
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint);
   }catch(error){
     console.warn('Community board geography unavailable:',error);
     const option=ui['civic-layer'].querySelector('option[value="boards"]');
     if(option)option.disabled=true;
     ui['civic-layer'].disabled=false;
     document.getElementById('civic-source').textContent='Community board boundary map temporarily unavailable; official civic directories remain accessible.';
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint);
   }
 }
 function schoolDistrictStyle(district){
@@ -582,7 +628,16 @@ function wire(){
     if(event.key==='Enter'){event.preventDefault();findSchool();}
   });
   map.on('moveend zoomend',refreshSchoolPins);
+  // A street-grid click identifies the actual point; never infer board from NTA.
+  // Leaflet path clicks bubble to the map, so profiles and this independent
+  // civic lookup can be shown together.
+  map.on('click',event=>identifyCommunityAtPoint(event.latlng));
+  document.getElementById('identify-board-center').disabled=false;
+  document.getElementById('identify-board-center').addEventListener('click',()=>{
+    identifyCommunityAtPoint(map.getCenter());
+  });
   ui['civic-layer'].addEventListener('change',()=>{
+    resetMapPointLookup();
     selected=null;selectedCommunity=null;ui.neighborhood.value='';
     render();
     const mode=ui['civic-layer'].value;
