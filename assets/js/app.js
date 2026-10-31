@@ -1,6 +1,9 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
+// Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
+// OpenStreetMap tile usage: https://operations.osmfoundation.org/policies/tiles/
+const STREETS_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const NYC_BOUNDS = [[40.49,-74.27],[40.94,-73.68]];
 const BOROUGH_COLORS = {Bronx:'#C7FF00',Brooklyn:'#FF3B9D',Manhattan:'#00D9FF',Queens:'#AF68FF','Staten Island':'#FF9A24'};
 // Fixed landmark orientation markers are illustrative, not NTA demographic observations.
@@ -20,13 +23,16 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['borough','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count'].map(id=>[id,document.getElementById(id)]));
-let records=[], map, geoLayer, boroughLabels, landmarkLayer, selected=null, byCode=new Map();
+const ui = Object.fromEntries(['borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count'].map(id=>[id,document.getElementById(id)]));
+let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask, selected=null, byCode=new Map();
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
-  // Borough-first cartography: no street basemap, surrounding jurisdictions or tile dependency.
-  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,zoomSnap:0.1,zoomDelta:0.5,minZoom:9,maxZoom:16,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
+  // Default view includes recognizable street and block grids; mask outside NYC.
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:false,zoomSnap:0.1,zoomDelta:0.5,minZoom:9,maxZoom:17,maxBounds:[[40.40,-74.40],[41.04,-73.50]],maxBoundsViscosity:1,preferCanvas:true}).fitBounds(NYC_BOUNDS);
+  const maskPane=map.createPane('cityMaskPane');
+  maskPane.style.zIndex='350'; // Above street tiles (200), below neighborhood polygons (400).
+  maskPane.style.pointerEvents='none';
 }
 async function download(url){const response=await fetch(url);if(!response.ok) throw new Error(`HTTP ${response.status}`);return response.json();}
 async function loadGeography(){
@@ -35,8 +41,72 @@ async function loadGeography(){
 }
 function baseStyle(record){
   const fill=BOROUGH_COLORS[record.borough] || '#cbd5dc';
-  if(ui.borough.value==='all') return {color:'#241039',weight:.72,opacity:.9,fillColor:fill,fillOpacity:1};
-  return {color:'#241039',weight:1.3,opacity:1,fillColor:record.special?'#dee6ed':fill,fillOpacity:.96};
+  const streets=ui['map-detail'].value==='streets';
+  // In street view, transparent neon borough overlays expose actual roads and intersections.
+  // Comic-only view restores fully saturated fills while preserving the same true boundaries.
+  if(ui.borough.value==='all') return {
+    color:'#241039',weight:streets?.8:.72,opacity:streets?.48:.9,
+    fillColor:fill,fillOpacity:streets?.27:1
+  };
+  return {
+    color:'#241039',weight:streets?1.5:1.3,opacity:1,
+    fillColor:record.special?'#dee6ed':fill,
+    fillOpacity:streets?(record.special?.18:.20):.96
+  };
+}
+function styleFor(record){
+  if(selected===record) return {color:'#241039',weight:4,fillColor:'#FFFFFF',
+    fillOpacity:ui['map-detail'].value==='streets'?.30:1};
+  return baseStyle(record);
+}
+// Create an outside-NYC matte from the SAME pinned DCP 2020 polygons, not an
+// approximated borough bounding rectangle. Even-odd cutouts leave city streets
+// visible on the land polygons and hide neighboring municipalities.
+function cityMaskRings(features){
+  const rings=[[[39,-76],[39,-72],[43,-72],[43,-76]]];
+  for(const feature of features){
+    const geometry=feature.geometry;
+    const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
+    for(const polygon of polygons){
+      for(const ring of polygon){
+        rings.push(ring.map(point=>[point[1],point[0]]));
+      }
+    }
+  }
+  return rings;
+}
+function initializeStreetMap(features){
+  outsideCityMask=L.polygon(cityMaskRings(features),{
+    pane:'cityMaskPane',renderer:L.canvas({pane:'cityMaskPane',padding:.1}),
+    stroke:false,fill:true,fillRule:'evenodd',fillColor:'#e4faff',fillOpacity:1,
+    interactive:false
+  });
+  streetTiles=L.tileLayer(STREETS_URL,{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+    maxZoom:19,updateWhenIdle:true,keepBuffer:1
+  });
+  let errors=0;
+  streetTiles.on('tileerror',()=>{
+    if(++errors>=8 && ui['map-detail'].value==='streets'){
+      ui['map-detail'].value='comic';
+      setMapDetail('comic');
+      status('Street tiles could not load. Switched to the neon map; official neighborhood boundaries still work.',true);
+    }
+  });
+}
+function setMapDetail(mode){
+  if(mode==='streets'){
+    // Add outside-city matte before showing tiles to avoid visible spillover.
+    if(!map.hasLayer(outsideCityMask))outsideCityMask.addTo(map);
+    if(!map.hasLayer(streetTiles))streetTiles.addTo(map);
+  }else{
+    if(map.hasLayer(streetTiles))map.removeLayer(streetTiles);
+    if(map.hasLayer(outsideCityMask))map.removeLayer(outsideCityMask);
+  }
+  geoLayer.eachLayer(layer=>layer.setStyle(styleFor(byCode.get(layer.feature.properties.__ntaCode))));
+  document.getElementById('street-map-note').textContent=mode==='streets'
+    ? 'Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.'
+    : 'Neon-only view: official NYC DCP 2020 NTA geography.';
 }
 function writeMeta(pairs){
   ui['detail-meta'].replaceChildren();
@@ -70,7 +140,7 @@ function display(record){
   writeMeta([['Borough',record.borough],['2020 NTA code',record.code],['Area classification',record.special?'Special purpose':'Residential'],['NTA type code',record.ntaType||'Not provided']]);
   geoLayer.eachLayer(layer=>{
     const r=byCode.get(layer.feature.properties.__ntaCode);
-    layer.setStyle(r===record?{color:'#241039',weight:4,fillColor:'#FFFFFF',fillOpacity:1}:baseStyle(r));
+    layer.setStyle(styleFor(r));
   });
   const layer=geoLayer.getLayers().find(x=>x.feature.properties.__ntaCode===record.code);
   if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[48,48],maxZoom:14});}
@@ -119,7 +189,8 @@ function render(){
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status(`Selected ${found.name} (${found.code}), ${found.borough}.`);}else{status('No matching NTA in the selected borough. Try another spelling or clear the borough filter.',true);}}
 function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
-  for(const id of ['borough','neighborhood','search-button','reset'])ui[id].disabled=false;
+  for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
+  ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
   ui.borough.addEventListener('change',()=>switchBorough(ui.borough.value));
   ui['search-button'].addEventListener('click',search);
   ui.neighborhood.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();search();}});
@@ -151,7 +222,9 @@ async function init(){
       const icon=L.divIcon({className:'borough-label',html:'<span>'+borough+'</span>',iconSize:[146,42],iconAnchor:[73,21]});
       L.marker(point,{icon,keyboard:true,title:'Explore '+borough}).on('click',()=>switchBorough(borough)).addTo(boroughLabels);
     }
+    initializeStreetMap(records.map(r=>r.feature));
     wire();render();
+    setMapDetail(ui['map-detail'].value);
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
