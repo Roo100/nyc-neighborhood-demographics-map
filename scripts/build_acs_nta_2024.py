@@ -64,7 +64,7 @@ def summarise(rows):
     total=count_sum(rows,RACE_TOTAL)
     nonhisp=count_sum(rows,TOTAL_NH)
     race_counts={name:count_sum(rows,key) for name,key in RACE_COLS.items()}
-    race_valid=total is not None and nonhisp is not None and all(v is not None for v in race_counts.values())
+    race_valid=total is not None and total>0 and nonhisp is not None and all(v is not None for v in race_counts.values())
     race_moes={name:summed_moe(rows,key) for name,key in RACE_COLS.items()}
     if race_valid:
         other=nonhisp-race_counts["White non-Hispanic"]-race_counts["Black non-Hispanic"]-race_counts["Asian non-Hispanic"]
