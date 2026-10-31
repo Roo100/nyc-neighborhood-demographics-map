@@ -1,0 +1,45 @@
+{
+  "status": "ACS_2024_TRACT_SOURCE_STAGED_NOT_APPROVED_TO_RENDER",
+  "source": "US Census Bureau ACS 2020\u20132024 5-year table-based Summary File",
+  "downloaded_at_utc": "2026-10-31T22:27:13.425897+00:00",
+  "geography": "2020 census tracts in Bronx, Kings, New York, Queens, Richmond counties",
+  "five_nyc_counties": {
+    "005": "Bronx",
+    "047": "Brooklyn",
+    "061": "Manhattan",
+    "081": "Queens",
+    "085": "Staten Island"
+  },
+  "tables": {
+    "B19001": {
+      "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b19001.dat",
+      "download_size_bytes": 68953041,
+      "source_sha256": "1af421b3b9d0f85dbd938cd518ad5d01c693fa2870f24e1089552ea5c1e6683f",
+      "nyc_tract_rows": 2327
+    },
+    "B17001": {
+      "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b17001.dat",
+      "download_size_bytes": 118607125,
+      "source_sha256": "707adda8aaff136382f4fe0858617d09062da48b1a3d2ab2e9a1047def09b531",
+      "nyc_tract_rows": 2327
+    },
+    "B03002": {
+      "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b03002.dat",
+      "download_size_bytes": 83256772,
+      "source_sha256": "ef1a9310905393bf477820de8edb2935c1e9bdb356be65b5ee5fb6fceda911c1",
+      "nyc_tract_rows": 2327
+    }
+  },
+  "nyc_tract_union": 2327,
+  "nyc_tracts_by_county": {
+    "Bronx": 361,
+    "Brooklyn": 805,
+    "Manhattan": 310,
+    "Queens": 725,
+    "Staten Island": 126
+  },
+  "full_csv_sha256": "a54df72961e8cae876ffe6a39535abcdb0d08799d6585754e68b0a20911c3170",
+  "income_csv_sha256": "95e73ebe9c8c6e0076f46f9993d205d25c1eaef0096f2051b08929bdeccc0976",
+  "methodology": "Reproducibly filtered official nationwide table files by 1400000US GEOID; retained estimates and 90%-confidence MOEs; no filling of missing/suppressed values",
+  "publication_gate": "HOLD until DCP 2020 tract-to-NTA completeness, suppression, MOE, borough reconciliation and 2020 NTA coverage are validated"
+}
