@@ -13,8 +13,8 @@ async function checkViewport(label, viewport) {
   const errors = [];
   page.on('pageerror', error=>errors.push(error.message));
   await page.goto(BASE_URL, {waitUntil:'domcontentloaded',timeout:45000});
-  await page.locator('#feature-count').getByText('262').waitFor({timeout:45000});
-  await page.getByRole('status').getByText(/Loaded 262 official 2020 NTA polygons/).waitFor({timeout:45000});
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262',null,{timeout:45000});
+  await page.locator('#status').filter({hasText:/Loaded 262 official 2020 NTA polygons/}).waitFor({timeout:45000});
   const title = await page.title();
   assert.match(title,/NYC POP!/);
   assert.equal(await page.locator('[data-borough]').count(),5);
@@ -28,18 +28,18 @@ async function checkViewport(label, viewport) {
     'Unexpected horizontal scrolling: '+JSON.stringify(measured));
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-overview.png',fullPage:true});
   await page.locator('[data-borough="Bronx"]').click();
-  await page.locator('#feature-count').getByText('50').waitFor();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='50');
   assert.equal(await page.locator('#detail-name').textContent(),'Bronx');
   assert.equal(await page.locator('.comic-landmark').count(),1);
   await page.locator('#neighborhood').fill('Longwood');
   await page.locator('#search-button').click();
-  await page.locator('#detail-name').getByText('Longwood').waitFor();
+  await page.locator('#detail-name').filter({hasText:'Longwood'}).waitFor();
   assert.equal(await page.locator('#detail-meta').textContent().then(text=>text.includes('BX0202')),true);
   await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-bronx-longwood.png',fullPage:true});
   await page.locator('[data-borough="Queens"]').click();
-  await page.locator('#feature-count').getByText('82').waitFor();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='82');
   await page.locator('#reset').click();
-  await page.locator('#feature-count').getByText('262').waitFor();
+  await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent?.trim()==='262');
   assert.equal(await page.locator('.comic-landmark').count(),5);
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
