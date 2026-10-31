@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=civic-board-review-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=education-review-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=civic-board-review-1"></script>
+  <script type="module" src="assets/js/app.js?v=education-review-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -28,9 +28,25 @@
         <button type="button" data-borough="Staten Island">Staten Island</button>
       </nav>
       <section class="controls" aria-label="Map controls">
-        <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option></select></div>
+        <div class="field civic-layer-field"><label for="civic-layer">Explore map</label><select id="civic-layer" disabled><option value="nta" selected>Neighborhoods · 2020 NTAs</option><option value="boards">Community boards · 2026</option><option value="schooldistricts" disabled>School districts · 2026</option><option value="schools" disabled>K–12 school locations</option></select></div>
         <div class="field"><label for="borough">Borough</label><select id="borough" disabled><option value="all">All five boroughs</option></select></div>
         <div class="field community-board-field" id="board-picker-field" hidden><label for="community-board">Community board</label><select id="community-board" disabled><option value="">Select a community board</option></select></div>
+        <div class="field education-picker-field" id="education-picker-field" hidden>
+          <label for="education-picker">School district</label>
+          <select id="education-picker" disabled><option value="">Choose a school district</option></select>
+        </div>
+        <div class="field school-filter-field" id="school-filter-field" hidden>
+          <label for="school-type">School type</label>
+          <select id="school-type" disabled>
+            <option value="all">All schools</option><option value="Public">Public</option>
+            <option value="Charter">Charter</option><option value="Nonpublic">Nonpublic</option><option value="Unclassified">Other / not classified</option>
+          </select>
+        </div>
+        <div class="field school-search-field" id="school-search-field" hidden>
+          <label for="school-search">Find K–12 school by name or ID</label>
+          <input id="school-search" type="search" disabled placeholder="Enter a school name or NYSED ID" autocomplete="off" />
+          <button type="button" id="school-find" disabled>Find school</button>
+        </div>
         <div class="field map-view-field"><label for="map-detail">Map detail</label><select id="map-detail" disabled><option value="streets" selected>Streets + grid</option><option value="comic">Neon-only</option></select></div>
         <div class="field search-field"><label for="neighborhood">Find neighborhood or NTA code</label><input id="neighborhood" type="search" placeholder="Search e.g. Harlem, Astoria, BX0101" autocomplete="off" list="nta-options" disabled /><datalist id="nta-options"></datalist></div>
         <button id="search-button" type="button" disabled>Find on map</button>
@@ -40,7 +56,7 @@
       <section class="workspace" aria-label="NYC neighborhood map and details">
         <div class="map-frame">
           <div id="map" role="region" aria-label="Interactive map of New York City streets, block grids and official 2020 Neighborhood Tabulation Areas, with surrounding municipalities masked"></div>
-          <div class="map-key" aria-label="Map legend"><div class="key-title">Color your NYC</div><div><span class="swatch bronx"></span> Bronx</div><div><span class="swatch brooklyn"></span> Brooklyn</div><div><span class="swatch manhattan"></span> Manhattan</div><div><span class="swatch queens"></span> Queens</div><div><span class="swatch staten"></span> Staten Island</div><div class="key-note">⚾ 🎡 🏙️ 🌐 ⛴️ Explore 2020 neighborhoods or 2026 community boards. They are different geographic districts. Zoom to view NYC streets.</div></div>
+          <div class="map-key" aria-label="Map legend"><div class="key-title">Color your NYC</div><div><span class="swatch bronx"></span> Bronx</div><div><span class="swatch brooklyn"></span> Brooklyn</div><div><span class="swatch manhattan"></span> Manhattan</div><div><span class="swatch queens"></span> Queens</div><div><span class="swatch staten"></span> Staten Island</div><div class="key-note">⚾ 🎡 🏙️ 🌐 ⛴️ Explore neighborhoods, community boards, school districts or K–12 school sites. Districts are not attendance zones; zoom for NYC streets.</div></div>
           <p class="street-map-note" id="street-map-note" aria-live="polite">Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.</p>
         </div>
         <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl>
@@ -51,13 +67,16 @@
           <p id="civic-context">Select a borough or community board to see its government context. Legislative districts may cross neighborhoods.</p>
           <p class="borough-president-line"><strong>Borough president:</strong> <span id="borough-president">Select a borough</span></p>
           <div class="civic-links">
+            <a href="https://www.myschools.nyc/en/" target="_blank" rel="noopener noreferrer">Browse K–12 schools &amp; admissions on MySchools</a>
+            <a href="https://infohub.nyced.org/reports/admissions-and-enrollment/directory-data" target="_blank" rel="noopener noreferrer">Official Fall 2026 K–12 school directories</a>
+            <a href="https://data.cityofnewyork.us/d/8ugf-3d8u" target="_blank" rel="noopener noreferrer">Official school district map source</a>
             <a href="https://www.nyc.gov/site/communityboards/index.page" target="_blank" rel="noopener noreferrer">Community board directory &amp; contacts</a>
             <a href="https://council.nyc.gov/districts/" target="_blank" rel="noopener noreferrer">Find my City Council member</a>
             <a href="https://elections.ny.gov/new-york-state-elected-officials" target="_blank" rel="noopener noreferrer">Find State Senator &amp; Assembly member</a>
             <a href="https://www.nyc.gov/main/your-government" target="_blank" rel="noopener noreferrer">NYC elected officials directory</a>
             <a href="https://portal.311.nyc.gov/" target="_blank" rel="noopener noreferrer">NYC 311 services</a>
           </div>
-          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
+          <p class="civic-date-note">Borough president names verified October 31, 2026. Community boundaries: NYC Planning 2026 (26b). Elected officials are not inferred from an NTA.</p><p class="civic-date-note" id="education-source">School-district boundaries and K–12 school locations are being verified from official sources. Districts are not school attendance zones.</p><p class="civic-date-note" id="civic-source" aria-live="polite">Checking official community district boundaries…</p>
         </section>
       </section>
       <section class="below"><div><strong id="feature-count">—</strong><span id="feature-label">NTAs in selected borough filter</span></div><p>2020 NTA boundaries are statistical reporting areas, not definitive neighborhood definitions. Parks, airports, cemeteries and other special-purpose areas are identified in borough detail view. Sources: NYC Department of City Planning <a href="https://data.cityofnewyork.us/d/9nt8-h7nd">2020 NTAs</a> and <a href="https://data.cityofnewyork.us/d/5crt-au7u">2026 community districts</a>. Districts are different geographies; do not infer electoral representation from NTA alone.</p></section>
