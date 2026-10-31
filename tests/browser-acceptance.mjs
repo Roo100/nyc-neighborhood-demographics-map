@@ -60,6 +60,21 @@ async function checkViewport(label, viewport) {
     assert.equal(manhattanClear,0,'Manhattan landmark area must reveal the street grid through matte');
   }
   assert.ok(await page.locator('#map .leaflet-control-attribution').count()===1,'Street source attribution remains visible');
+  if(label==='desktop'){
+    const debug=await page.evaluate(()=>{
+      const get=(selector)=>{
+        const x=document.querySelector(selector);
+        if(!x)return null;
+        const r=x.getBoundingClientRect(),style=getComputedStyle(x);
+        return {left:r.left,top:r.top,width:r.width,height:r.height,zIndex:style.zIndex,position:style.position,display:style.display,opacity:style.opacity};
+      };
+      const tiles=[...document.querySelectorAll('.leaflet-tile')];
+      const matte=document.querySelector('canvas.city-matte-canvas');
+      const alpha=matte.getContext('2d').getImageData(10,10,1,1).data[3];
+      return {map:get('#map'),mapPane:get('.leaflet-map-pane'),tiles:get('.leaflet-tile-pane'),maskPane:get('.leaflet-cityMask-pane'),maskCanvas:get('canvas.city-matte-canvas'),alphaTopLeft:alpha,tilesComplete:tiles.filter(x=>x.complete&&x.naturalWidth>0).length,tilesAll:tiles.length};
+    });
+    console.log('STREET_LAYER_DEBUG '+JSON.stringify(debug));
+  }
   await page.locator('#map-detail').selectOption('comic');
   await page.waitForFunction(()=>document.querySelectorAll('.leaflet-tile').length===0);
   await page.locator('#map-detail').selectOption('streets');
