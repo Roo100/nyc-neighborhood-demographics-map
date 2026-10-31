@@ -354,7 +354,12 @@ function selectSchool(school){
 function refreshSchoolPins(){
   if(!schoolMarkers)return;
   schoolMarkers.clearLayers();
-  if(ui['civic-layer'].value!=='schools'||map.getZoom()<12.2)return;
+  const note=document.getElementById('school-pins-count');
+  if(ui['civic-layer'].value!=='schools')return;
+  if(map.getZoom()<12.2){
+    if(note)note.textContent='Zoom in to display school site pins; locations do not indicate school admission zones.';
+    return;
+  }
   const bounds=map.getBounds().pad(.13);
   const matches=filterSchoolLocations(schoolPoints,ui.borough.value,ui['school-type'].value,'')
     .filter(s=>bounds.contains(s.coordinates));
@@ -367,6 +372,7 @@ function refreshSchoolPins(){
     marker.on('click',()=>selectSchool(school));
     marker.addTo(schoolMarkers);
   }
+  if(note)note.textContent=matches.length+' school pins visible in this view. School location does not establish attendance-zone eligibility.';
 }
 function findSchool(){
   const q=ui['school-search'].value.trim();
@@ -451,6 +457,7 @@ function render(){
   }
   ui['school-filter-field'].hidden=!schoolMode;
   ui['school-search-field'].hidden=!schoolMode;
+  document.getElementById('school-pins-count').hidden=!schoolMode;
   ui['school-type'].disabled=!schoolMode;
   ui['school-search'].disabled=!schoolMode;
   ui['school-find'].disabled=!schoolMode;
