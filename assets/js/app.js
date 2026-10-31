@@ -168,9 +168,13 @@ function writeMeta(pairs){
   }
 }
 
+function closeMobileCivicCard(){
+  map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay').forEach(el=>el.remove());
+}
 function resetMapPointLookup(){
   selectedMapPoint=null;selectedMapNeighborhood=null;
   if(map)map.closePopup();
+  closeMobileCivicCard();
   if(mapPointMarker){map.removeLayer(mapPointMarker);mapPointMarker=null;}
   document.getElementById('point-board-result').textContent=
     'Click a street or place on the map to identify its community board from official 2026 boundaries.';
@@ -246,12 +250,27 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   disclaimer.className='nyc-pop-info-disclaimer';
   disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
   root.append(disclaimer);
-  const popupMaxHeight=Math.max(190,Math.min(350,map.getSize().y-100));
-  // Guarantee that a new street or neighborhood selection replaces, rather
-  // than stacks on top of, the previous card.
+  // One card at a time. The phone version stays entirely *inside* the map
+  // instead of allowing Leaflet's anchored popup to clip above its top edge.
   map.closePopup();
+  closeMobileCivicCard();
+  if(map.getSize().x<600){
+    const overlay=document.createElement('section');
+    overlay.className='nyc-pop-mobile-overlay';
+    overlay.setAttribute('role','dialog');
+    overlay.setAttribute('aria-label','Neighborhood and civic information');
+    const close=document.createElement('button');
+    close.type='button';close.className='nyc-pop-mobile-close';
+    close.textContent='×';close.setAttribute('aria-label','Close neighborhood information');
+    close.addEventListener('click',()=>overlay.remove());
+    overlay.append(close,root);
+    L.DomEvent.disableClickPropagation(overlay);
+    L.DomEvent.disableScrollPropagation(overlay);
+    map.getContainer().append(overlay);
+    return;
+  }
   L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,
-    maxHeight:popupMaxHeight,autoPan:true,
+    maxHeight:Math.max(220,Math.min(390,map.getSize().y-100)),autoPan:true,
     autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
     .setLatLng(latlng).setContent(root).openOn(map);
 }
