@@ -251,7 +251,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .map-view-field{min-width:155px}
 .map-view-field select{background:#e5fdfe;border:2px solid var(--ink);font-weight:900}
 .leaflet-tile-pane{filter:saturate(.78) contrast(1.10)}
-.leaflet-pane.leaflet-cityMaskPane-pane{pointer-events:none}
+.leaflet-pane.leaflet-cityMask-pane{pointer-events:none}
 .leaflet-control-attribution{
   background:#fffffff2!important;color:#241039!important;
   font-size:10px!important;border:1px solid #241039;border-radius:4px;
