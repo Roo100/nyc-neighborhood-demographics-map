@@ -1,5 +1,5 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
-import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict} from './civic.js';
+import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON,indexCommunityDistricts,lookupCommunityDistrict,lookupPolygonAtPoint} from './civic.js';
 import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,validateSchoolLocations,filterSchoolLocations} from './education.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
@@ -32,7 +32,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   schoolDistricts=[],schoolDistrictByCode=new Map(),schoolDistrictLayer=null,
   schoolPoints=[],schoolById=new Map(),schoolMarkers=null,
   selectedSchool=null,selectedSchoolDistrict=null,
-  communitySpatialIndex=null,selectedMapPoint=null,mapPointMarker=null;
+  communitySpatialIndex=null,schoolDistrictSpatialIndex=null,
+  selectedMapPoint=null,selectedMapNeighborhood=null,mapPointMarker=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -168,16 +169,90 @@ function writeMeta(pairs){
 }
 
 function resetMapPointLookup(){
-  selectedMapPoint=null;
+  selectedMapPoint=null;selectedMapNeighborhood=null;
+  if(map)map.closePopup();
   if(mapPointMarker){map.removeLayer(mapPointMarker);mapPointMarker=null;}
   document.getElementById('point-board-result').textContent=
     'Click a street or place on the map to identify its community board from official 2026 boundaries.';
   document.getElementById('point-board-coordinates').textContent='';
   document.getElementById('point-board-panel').dataset.lookupStatus='idle';
 }
-function identifyCommunityAtPoint(latlng){
+
+function showCivicPopup(latlng,neighborhood,communityMatch){
+  const root=document.createElement('div');
+  root.className='nyc-pop-info-card';
+  const eyebrow=document.createElement('div');
+  eyebrow.className='nyc-pop-info-eyebrow';
+  eyebrow.textContent='NYC POP! · NEIGHBORHOOD & CIVIC INFO';
+  root.append(eyebrow);
+  const title=document.createElement('h3');
+  title.className='nyc-pop-info-title';
+  title.textContent=neighborhood?.name||'Selected NYC location';
+  root.append(title);
+  if(neighborhood?.borough){
+    const subtitle=document.createElement('p');
+    subtitle.className='nyc-pop-info-subtitle';
+    subtitle.textContent=neighborhood.borough+' · NYC';
+    root.append(subtitle);
+  }
+  const facts=document.createElement('dl');
+  facts.className='nyc-pop-info-facts';
+  const row=(label,value)=>{
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=label;dd.textContent=value;facts.append(dt,dd);
+  };
+  let boardBorough;
+  if(communityMatch.status==='board'){
+    row('Community board',communityMatch.record.name);
+    boardBorough=communityMatch.record.borough;
+  }else if(communityMatch.status==='joint_interest'){
+    row('Community board','Joint Interest Area — no regular community board');
+    boardBorough=communityMatch.record.borough;
+  }else if(communityMatch.status==='boundary'){
+    row('Community board','District boundary — confirm the exact address');
+  }else if(communityMatch.status==='unavailable'){
+    row('Community board','Official boundaries loading or unavailable');
+  }else if(communityMatch.status==='outside'){
+    row('Community board','No mapped community board at this point');
+  }else{
+    row('Community board','Location could not be checked');
+  }
+  const schoolDistrict=lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng);
+  if(schoolDistrict.status==='match')
+    row('School district','Geographic District '+schoolDistrict.record.code);
+  else if(schoolDistrict.status==='boundary')
+    row('School district','District boundary — verify address');
+  else if(schoolDistrict.status==='unavailable')
+    row('School district','District data loading or unavailable');
+  else row('School district','No mapped geographic school district');
+  const borough=neighborhood?.borough||boardBorough;
+  if(borough&&BOROUGH_PRESIDENTS[borough])
+    row('Borough president',BOROUGH_PRESIDENTS[borough]);
+  root.append(facts);
+  const links=document.createElement('div');
+  links.className='nyc-pop-info-links';
+  for(const [label,url] of [
+    ['Community board contacts','https://www.nyc.gov/site/communityboards/index.page'],
+    ['Find elected representatives','https://council.nyc.gov/districts/'],
+    ['Browse K–12 schools','https://www.myschools.nyc/en/']
+  ]){
+    const a=document.createElement('a');
+    a.textContent=label;a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+    links.append(a);
+  }
+  root.append(links);
+  const disclaimer=document.createElement('p');
+  disclaimer.className='nyc-pop-info-disclaimer';
+  disclaimer.textContent='Board and school district describe this exact map point, not the entire neighborhood. School districts are not attendance zones; legislative districts may also differ.';
+  root.append(disclaimer);
+  L.popup({className:'nyc-pop-info-popup',maxWidth:365,minWidth:245,autoPan:true,
+    autoPanPaddingTopLeft:[30,30],autoPanPaddingBottomRight:[30,40]})
+    .setLatLng(latlng).setContent(root).openOn(map);
+}
+function identifyCommunityAtPoint(latlng,neighborhood=null){
   if(!latlng||!Number.isFinite(latlng.lat)||!Number.isFinite(latlng.lng))return;
   selectedMapPoint={lat:latlng.lat,lng:latlng.lng};
+  selectedMapNeighborhood=neighborhood;
   if(mapPointMarker)map.removeLayer(mapPointMarker);
   mapPointMarker=L.marker(selectedMapPoint,{
     interactive:false,keyboard:false,zIndexOffset:500,
@@ -206,6 +281,7 @@ function identifyCommunityAtPoint(latlng){
   }else{
     output.textContent='This map location cannot be checked. Select a valid point in NYC.';
   }
+  showCivicPopup(latlng,neighborhood,match);
 }
 function updateCivicContext(borough, board=null){
   ui['borough-president'].textContent=borough?BOROUGH_PRESIDENTS[borough]:'Select a borough';
@@ -327,14 +403,14 @@ async function loadCommunityGeography(){
     ui['civic-layer'].disabled=false;
     ui['civic-layer'].title='Choose 2020 NTAs or 59 verified 2026 community boards ('+origin+')';
     document.getElementById('civic-source').textContent='Community districts: DCP 2026, 59 boards + 12 non-board special areas. '+origin+'.';
-    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint);
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
   }catch(error){
     console.warn('Community board geography unavailable:',error);
     const option=ui['civic-layer'].querySelector('option[value="boards"]');
     if(option)option.disabled=true;
     ui['civic-layer'].disabled=false;
     document.getElementById('civic-source').textContent='Community board boundary map temporarily unavailable; official civic directories remain accessible.';
-    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint);
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
   }
 }
 function schoolDistrictStyle(district){
@@ -438,6 +514,8 @@ async function loadEducationGeography(){
     const source=await download(SCHOOL_DISTRICTS_LOCAL);
     schoolDistricts=validateSchoolDistricts(source);
     schoolDistrictByCode=new Map(schoolDistricts.map(x=>[x.code,x]));
+    schoolDistrictSpatialIndex=indexCommunityDistricts(schoolDistricts);
+    if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
     schoolDistrictLayer=L.geoJSON(null,{
       style:f=>schoolDistrictStyle(schoolDistrictByCode.get(Number(f.properties.district))),
       onEachFeature:(f,layer)=>{
