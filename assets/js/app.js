@@ -1,4 +1,5 @@
 import {BOROUGHS,validNtas,filterNtas,findNta} from './nta.js';
+import {COMMUNITY_LOCAL,COMMUNITY_REMOTE,BOARD_COUNTS,BOROUGH_PRESIDENTS,parseBoroCd,validateCommunityGeoJSON} from './civic.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -23,8 +24,10 @@ function plausibleNYCBounds(bounds){
 function fitNYCBounds(bounds, options={padding:[22,22]}){
   map.fitBounds(plausibleNYCBounds(bounds) ? bounds : NYC_BOUNDS, options);
 }
-const ui = Object.fromEntries(['borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count'].map(id=>[id,document.getElementById(id)]));
-let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask, selected=null, byCode=new Map();
+const ui = Object.fromEntries(['civic-layer','borough','map-detail','neighborhood','nta-options','search-button','reset','status','detail-name','detail-intro','detail-meta','feature-count','feature-label','profile-kicker','civic-context','borough-president'].map(id=>[id,document.getElementById(id)]));
+let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsideCityMask,
+  selected=null, selectedCommunity=null, byCode=new Map(), communityBoards=[],
+  communityByCode=new Map(), communityLayer=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -138,6 +141,10 @@ function setMapDetail(mode){
     if(map.hasLayer(outsideCityMask))map.removeLayer(outsideCityMask);
   }
   geoLayer.eachLayer(layer=>layer.setStyle(styleFor(byCode.get(layer.feature.properties.__ntaCode))));
+  if(communityLayer)communityLayer.eachLayer(layer=>{
+    const board=communityByCode.get(parseBoroCd(layer.feature)?.code);
+    if(board)layer.setStyle(communityStyle(board));
+  });
   document.getElementById('street-map-note').textContent=mode==='streets'
     ? 'Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.'
     : 'Neon-only view: official NYC DCP 2020 NTA geography.';
@@ -150,28 +157,43 @@ function writeMeta(pairs){
     ui['detail-meta'].append(dt,dd);
   }
 }
+function updateCivicContext(borough, board=null){
+  ui['borough-president'].textContent=borough?BOROUGH_PRESIDENTS[borough]:'Select a borough';
+  ui['civic-context'].textContent=board
+    ? board.name+' serves the mapped community district. Community board membership and meeting information are maintained in the official NYC directory. Council and state legislative districts have separate boundaries.'
+    : borough
+      ? 'Borough-wide executive: '+borough+'. Use the official directories below to locate the district-specific Council member, State Senator and Assembly member. Neighborhoods may cross their district lines.'
+      : 'NYC has 59 community boards. Select the Community boards map layer to explore their actual boundaries; use official lookup directories to confirm elected representatives by address.';
+}
 function overviewProfile(){
+  ui['profile-kicker'].textContent='NEIGHBORHOOD PROFILE';
   ui['detail-name'].textContent='Explore the five boroughs';
   ui['detail-intro'].textContent='Pick a neon borough, tap a landmark icon, or use the search to explore official NYC neighborhood areas.';
   writeMeta([['Geographic coverage','New York City'],['Boroughs','5'],['2020 NTAs',String(records.length)]]);
+  updateCivicContext(null);
 }
 function boroughProfile(borough){
   const local=filterNtas(records,borough);
+  ui['profile-kicker'].textContent='BOROUGH PROFILE';
   ui['detail-name'].textContent=borough;
   ui['detail-intro'].textContent='Tap any neighborhood for its profile. The landmark icon helps orient your view; gray areas are special-purpose NTAs.';
   writeMeta([['Borough',borough],['2020 NTAs',String(local.length)],['Special-purpose areas',String(local.filter(r=>r.special).length)]]);
+  updateCivicContext(borough);
 }
 function switchBorough(borough){
-  selected=null;ui.borough.value=borough;ui.neighborhood.value='';
+  selected=null;selectedCommunity=null;ui.borough.value=borough;ui.neighborhood.value='';
   render();
-  status(borough==='all'?'Showing New York City: five boroughs.':'Exploring '+borough+' neighborhoods.');
+  const layerName=ui['civic-layer'].value==='boards'?'community boards':'neighborhoods';
+  status(borough==='all'?'Showing all five NYC boroughs and their '+layerName+'.':'Exploring '+borough+' '+layerName+'.');
 }
 function display(record){
   if(ui.borough.value!==record.borough){ui.borough.value=record.borough;render();}
   selected=record;
+  ui['profile-kicker'].textContent='NEIGHBORHOOD PROFILE';
   ui['detail-name'].textContent=record.name;
   ui['detail-intro'].textContent=record.special?'Official special-purpose area; it may have limited or no residential population.':'Official 2020 Neighborhood Tabulation Area. Demographic and election results are not yet attached.';
   writeMeta([['Borough',record.borough],['2020 NTA code',record.code],['Area classification',record.special?'Special purpose':'Residential'],['NTA type code',record.ntaType||'Not provided']]);
+  updateCivicContext(record.borough);
   geoLayer.eachLayer(layer=>{
     const r=byCode.get(layer.feature.properties.__ntaCode);
     layer.setStyle(styleFor(r));
@@ -179,12 +201,98 @@ function display(record){
   const layer=geoLayer.getLayers().find(x=>x.feature.properties.__ntaCode===record.code);
   if(layer){layer.bringToFront();fitNYCBounds(layer.getBounds(),{padding:[48,48],maxZoom:14});}
 }
+// Community Board boundaries (DCP 2026) have an independent source and are NOT NTA matches.
+function communityStyle(board){
+  const selectedHere=selectedCommunity?.code===board.code;
+  const streets=ui['map-detail'].value==='streets';
+  return {color:selectedHere?'#ffffff':'#241039',
+    weight:selectedHere?4.5:2.3,
+    opacity:1,
+    fillColor:BOROUGH_COLORS[board.borough],
+    fillOpacity:streets?(selectedHere?.3:.20):(selectedHere?.85:.7)};
+}
+function boardOverview(borough){
+  ui['profile-kicker'].textContent='COMMUNITY BOARDS · NYC PLANNING 2026';
+  const count=borough==='all'?communityBoards.length:communityBoards.filter(x=>x.borough===borough).length;
+  ui['detail-name'].textContent=borough==='all'?'NYC Community Boards':borough+' Community Boards';
+  ui['detail-intro'].textContent='Select a boundary for the community board number and official government contact directory. These 2026 boundaries are distinct from 2020 NTA geography.';
+  writeMeta([['Community boards',String(count)],['Boundary release','NYC DCP 26b · May 2026'],['Source ID','5crt-au7u'],['Special areas','12 citywide Joint Interest Areas are not community boards']]);
+  updateCivicContext(borough==='all'?null:borough);
+}
+function boardProfile(board){
+  ui['profile-kicker'].textContent='OFFICIAL COMMUNITY DISTRICT';
+  ui['detail-name'].textContent=board.name;
+  ui['detail-intro'].textContent='This is a 2026 community district boundary, not a 2020 NTA or an elected legislative district. Visit the official community board directory for members, meetings and district contacts.';
+  writeMeta([['Borough',board.borough],['Community board','Board '+board.number],['BoroCD',String(board.code)],['Geography','NYC DCP 2026 · 26b'],['Other districts','City Council and state legislative districts may cross this board']]);
+  updateCivicContext(board.borough,board);
+}
+function showCommunityBoard(board){
+  selected=null;
+  selectedCommunity=board;
+  if(ui.borough.value!==board.borough){
+    ui.borough.value=board.borough;
+    render();
+  }else{
+    boardProfile(board);
+    communityLayer.eachLayer(layer=>{
+      const r=communityByCode.get(parseBoroCd(layer.feature)?.code);
+      if(r)layer.setStyle(communityStyle(r));
+    });
+  }
+  const featureLayer=communityLayer.getLayers().find(layer=>parseBoroCd(layer.feature)?.code===board.code);
+  if(featureLayer){featureLayer.bringToFront();fitNYCBounds(featureLayer.getBounds(),{padding:[50,50],maxZoom:13});}
+  status('Selected '+board.name+'. Verify current board contacts in the NYC directory; elected officials use separate boundaries.');
+}
+async function loadCommunityGeography(){
+  try{
+    let source, origin;
+    try{source=await download(COMMUNITY_LOCAL);origin='pinned 2026 DCP snapshot';}
+    catch(_){source=await download(COMMUNITY_REMOTE);origin='NYC Open Data live fallback';}
+    const valid=validateCommunityGeoJSON(source);
+    communityBoards=valid.boards;
+    communityByCode=new Map(communityBoards.map(b=>[b.code,b]));
+    communityLayer=L.geoJSON(null,{
+      style:feature=>communityStyle(communityByCode.get(parseBoroCd(feature)?.code)),
+      onEachFeature:(feature,layer)=>{
+        const board=communityByCode.get(parseBoroCd(feature)?.code);
+        layer.bindTooltip(board.name+' · official 2026 district',{sticky:true,direction:'top'});
+        layer.on('click',()=>showCommunityBoard(board));
+        layer.on('mouseover',()=>{if(selectedCommunity?.code!==board.code)layer.setStyle({weight:4,color:'#241039'});});
+        layer.on('mouseout',()=>layer.setStyle(communityStyle(board)));
+      }
+    });
+    ui['civic-layer'].disabled=false;
+    ui['civic-layer'].title='Choose 2020 NTAs or 59 verified 2026 community boards ('+origin+')';
+    document.getElementById('civic-source').textContent='Community districts: DCP 2026, 59 boards + 12 non-board special areas. '+origin+'.';
+  }catch(error){
+    console.warn('Community board geography unavailable:',error);
+    const option=ui['civic-layer'].querySelector('option[value="boards"]');
+    if(option)option.disabled=true;
+    ui['civic-layer'].disabled=false;
+    document.getElementById('civic-source').textContent='Community board boundary map temporarily unavailable; official civic directories remain accessible.';
+  }
+}
 function render(){
   const borough=ui.borough.value;
   const visible=filterNtas(records,borough);
+  const boardMode=ui['civic-layer'].value==='boards'&&!!communityLayer;
   geoLayer.clearLayers();
   geoLayer.addData({type:'FeatureCollection',features:visible.map(r=>r.feature)});
-  ui['feature-count'].textContent=visible.length.toLocaleString();
+  const visibleBoards=communityBoards.filter(board=>borough==='all'||board.borough===borough);
+  if(boardMode){
+    if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
+    communityLayer.clearLayers();
+    communityLayer.addData({type:'FeatureCollection',features:visibleBoards.map(b=>b.feature)});
+    if(!map.hasLayer(communityLayer))communityLayer.addTo(map);
+  }else{
+    if(communityLayer&&map.hasLayer(communityLayer))map.removeLayer(communityLayer);
+    if(!map.hasLayer(geoLayer))geoLayer.addTo(map);
+  }
+  ui['feature-count'].textContent=(boardMode?visibleBoards.length:visible.length).toLocaleString();
+  ui['feature-label'].textContent=boardMode?'community boards in selected borough filter':'NTAs in selected borough filter';
+  ui.neighborhood.disabled=boardMode;
+  ui['search-button'].disabled=boardMode;
+  ui.neighborhood.placeholder=boardMode?'Switch to Neighborhoods to search an NTA':'Search e.g. Harlem, Astoria, BX0101';
   ui['nta-options'].replaceChildren();
   for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){
     const option=document.createElement('option');option.value=r.name+' ('+r.code+')';ui['nta-options'].append(option);
@@ -217,14 +325,27 @@ function render(){
     button.setAttribute('aria-pressed',String(active));
   }
   if(selected&&!visible.includes(selected))selected=null;
-  if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
-  if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
+  if(selectedCommunity&&!visibleBoards.includes(selectedCommunity))selectedCommunity=null;
+  if(boardMode){
+    selectedCommunity?boardProfile(selectedCommunity):boardOverview(borough);
+    if(visibleBoards.length)fitNYCBounds(communityLayer.getBounds(),{padding:[35,35]});
+  }else{
+    if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
+    if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
+  }
 }
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status(`Selected ${found.name} (${found.code}), ${found.borough}.`);}else{status('No matching NTA in the selected borough. Try another spelling or clear the borough filter.',true);}}
 function wire(){
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
   ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
+  ui['civic-layer'].addEventListener('change',()=>{
+    selected=null;selectedCommunity=null;ui.neighborhood.value='';
+    render();
+    status(ui['civic-layer'].value==='boards'
+      ? 'Showing official NYC community boards (2026), separate from neighborhood and electoral boundaries.'
+      : 'Showing official NYC 2020 Neighborhood Tabulation Areas.');
+  });
   ui.borough.addEventListener('change',()=>switchBorough(ui.borough.value));
   ui['search-button'].addEventListener('click',search);
   ui.neighborhood.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();search();}});
@@ -259,6 +380,7 @@ async function init(){
     initializeStreetMap(records.map(r=>r.feature));
     wire();render();
     setMapDetail(ui['map-detail'].value);
+    void loadCommunityGeography();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }
