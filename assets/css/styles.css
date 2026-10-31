@@ -353,3 +353,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   .school-search-field input{min-width:130px}
   .school-search-field button{font-size:12px;padding:9px 10px}
 }
+
+
+.school-pins-count{
+  margin:15px 0 0;padding:10px 12px;border:2px solid #241039;
+  background:#dcfaff;color:#241039;font-size:13px;font-weight:800;border-radius:8px;
+}
