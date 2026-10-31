@@ -169,6 +169,10 @@ function setMapDetail(mode){
     const entry=schoolDistrictByCode.get(Number(layer.feature?.properties?.district));
     if(entry)layer.setStyle(schoolDistrictStyle(entry));
   });
+  if(councilLayer)councilLayer.eachLayer(layer=>{
+    const rec=legislativeLookup.council?.records.find(x=>x.code===Number(layer.feature?.properties?.district));
+    if(rec)layer.setStyle(councilStyle(rec));
+  });
   document.getElementById('street-map-note').textContent=mode==='streets'
     ? 'Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.'
     : 'Neon-only view: official NYC DCP 2020 NTA geography.';
@@ -184,6 +188,7 @@ function writeMeta(pairs){
 
 const preservedBoroughLegend=document.querySelector('.map-key').innerHTML;
 function updateACSLegend(){
+  if(ui['civic-layer'].value==='enrollment'&&enrollmentReady){updatePartyLegend();return;}
   const container=document.querySelector('.map-key');
   const layer=ui['demographic-layer'].value;
   if(layer==='borough'||!acsReady||ui['civic-layer'].value!=='nta'){
@@ -505,7 +510,8 @@ function boroughProfile(borough){
 }
 function switchBorough(borough){
   resetMapPointLookup();
-  selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;
+  if(ui['civic-layer'].value==='enrollment')ui['civic-layer'].value='nta';
+  selected=null;selectedCommunity=null;selectedSchoolDistrict=null;selectedSchool=null;selectedCouncil=null;
   ui.borough.value=borough;ui.neighborhood.value='';
   render();
   const layerName=ui['civic-layer'].value==='boards'?'community boards':'neighborhoods';
@@ -881,6 +887,11 @@ function updatePartyLegend(){
 }
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
+  const enrollmentMode=mode==='enrollment'&&!!councilLayer;
+  ui['political-field'].hidden=!enrollmentMode;
+  ui['political-metric'].disabled=!enrollmentMode;
+  ui.borough.disabled=enrollmentMode;
+  document.getElementById('party-profile').hidden=!enrollmentMode||!selectedCouncil;
   ui['demographic-field'].hidden=mode!=='nta';
   updateACSLegend();
   document.getElementById('acs-profile').hidden=mode!=='nta'||!selected||!acsReady;
@@ -942,7 +953,13 @@ function render(){
     'Return to Neighborhoods to search a 2020 NTA';
 
   // Switch actual polygon layers, without pretending their boundaries coincide.
-  if(boardMode){
+  if(councilLayer&&!enrollmentMode&&map.hasLayer(councilLayer))map.removeLayer(councilLayer);
+  if(enrollmentMode){
+    if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
+    if(communityLayer&&map.hasLayer(communityLayer))map.removeLayer(communityLayer);
+    if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
+    if(!map.hasLayer(councilLayer))councilLayer.addTo(map);
+  }else if(boardMode){
     if(map.hasLayer(geoLayer))map.removeLayer(geoLayer);
     if(schoolDistrictLayer&&map.hasLayer(schoolDistrictLayer))map.removeLayer(schoolDistrictLayer);
     communityLayer.clearLayers();
@@ -962,15 +979,16 @@ function render(){
   if(schoolMode&&schoolMarkers&&!map.hasLayer(schoolMarkers))schoolMarkers.addTo(map);
   if(!schoolMode&&schoolMarkers&&map.hasLayer(schoolMarkers))map.removeLayer(schoolMarkers);
 
-  const total=boardMode?visibleBoards.length:districtMode?schoolDistricts.length:
+  const total=enrollmentMode?51:boardMode?visibleBoards.length:districtMode?schoolDistricts.length:
     schoolMode?visibleSchools.length:visible.length;
   ui['feature-count'].textContent=total.toLocaleString();
-  ui['feature-label'].textContent=boardMode?'community boards in selected borough filter':
+  ui['feature-label'].textContent=enrollmentMode?'City Council districts with official February 2026 BOE party enrollment':
+    boardMode?'community boards in selected borough filter':
     districtMode?'geographic NYC school districts (citywide)':
     schoolMode?'K–12 school location records matching selected filters':
     'NTAs in selected borough filter';
 
-  if(borough==='all'&&!schoolMode&&!districtMode){
+  if(borough==='all'&&!schoolMode&&!districtMode&&!enrollmentMode){
     if(!map.hasLayer(boroughLabels))boroughLabels.addTo(map);
   }else if(map.hasLayer(boroughLabels))map.removeLayer(boroughLabels);
   landmarkLayer.clearLayers();
@@ -1001,7 +1019,10 @@ function render(){
   if(selectedCommunity&&!visibleBoards.includes(selectedCommunity))selectedCommunity=null;
   if(selectedSchool&&!visibleSchools.includes(selectedSchool))selectedSchool=null;
 
-  if(boardMode){
+  if(enrollmentMode){
+    selectedCouncil?showCouncilProfile(selectedCouncil):showCouncilOverview();
+    if(!selectedCouncil)fitNYCBounds(councilLayer.getBounds(),{padding:[35,35],animate:false});
+  }else if(boardMode){
     selectedCommunity?boardProfile(selectedCommunity):boardOverview(borough);
     if(visibleBoards.length){
       const target=selectedCommunity?
