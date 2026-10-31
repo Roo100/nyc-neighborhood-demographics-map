@@ -1,0 +1,57 @@
+name: Audit official 2025 NYC mayoral election-district CSV (research only)
+on:
+  push:
+    branches:
+      - research/2025-mayor-election-ed-audit
+    paths:
+      - scripts/audit_boe_mayor_2025_csv.py
+      - .github/workflows/audit-mayor-2025-ed.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  schema-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and inspect BOE certified mayor ED CSV — no publication
+        run: python scripts/audit_boe_mayor_2025_csv.py
+      - name: Audit candidate and administrative vote units against certified recap
+        run: python scripts/audit_boe_mayor_2025_units.py
+      - name: Reconcile ED unit and recap candidate structure, research only
+        run: python scripts/reconcile_boe_mayor_2025_recap.py
+      - name: Pin only recap-reconciled citywide results to research branch
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = 'research/2025-mayor-election-ed-audit'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/elections/mayor_2025_verified_citywide.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Pin BOE certified 2025 mayor citywide results with source hashes"
+            for attempt in 1 2 3 4; do
+              git fetch origin research/2025-mayor-election-ed-audit
+              git rebase origin/research/2025-mayor-election-ed-audit
+              if git push origin HEAD:research/2025-mayor-election-ed-audit; then exit 0; fi
+              sleep 3
+            done
+            exit 1
+          fi
+      - name: Archive schema evidence (not deployed to site)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2025-mayor-boe-ed-audit
+          path: |
+            data/elections/mayor_2025_ed_schema_audit.json
+            data/elections/mayor_2025_ed_units_audit.json
+            data/elections/mayor_2025_recap_reconciliation_audit.json
+            data/elections/mayor_2025_verified_citywide.json
+          if-no-files-found: warn
+          retention-days: 10

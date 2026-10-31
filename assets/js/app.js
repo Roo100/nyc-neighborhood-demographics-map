@@ -4,6 +4,7 @@ import {SCHOOL_DISTRICTS_LOCAL,K12_SCHOOL_POINTS_LOCAL,validateSchoolDistricts,v
 import {ACS_FILE,ACS_LAYER_OPTIONS,validateACSDisplay,acsLayerMetric,acsLayerError,acsFill,dataLegend,formatACSValue,raceLabels} from './acs.js';
 import {DISTRICT_KINDS,OFFICIAL_LEGISLATIVE_DIRS,validateDistrictGeoJSON,validateOfficialNames,makeDistrictLookup,identifyLegislators,officialForDistrict} from './representation.js';
 import {ENROLLMENT_FILE,PARTY_OPTIONS,validateCouncilEnrollment,enrollmentShare,partyFill,partyLegend,enrollmentDetails} from './political.js';
+import {MAYOR_2025_CITYWIDE,validateCitywideMayoralResult} from './elections.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -886,6 +887,56 @@ function updatePartyLegend(){
   note.textContent='NYC BOE active voter party enrollment, February 20, 2026. Council district totals, NOT neighborhood votes or election results. Blank=unaffiliated.';
   container.append(note);
 }
+
+async function loadCertifiedMayorResults(){
+  const status=document.getElementById('mayor-election-status');
+  const totals=document.getElementById('mayor-election-totals');
+  const host=document.getElementById('mayor-election-candidates');
+  if(!status||!totals||!host)return;
+  try{
+    const validated=validateCitywideMayoralResult(await download(MAYOR_2025_CITYWIDE));
+    const comma=n=>new Intl.NumberFormat('en-US').format(n);
+    status.textContent='Certified December 2, 2025 · NYC Board of Elections · all five boroughs';
+    totals.replaceChildren();
+    for(const [label,count] of [
+      ['Ballots cast',validated.total_ballots],
+      ['Recorded votes',validated.total_candidate_and_write_in_votes],
+      ['Unrecorded',validated.unrecorded_ballots]
+    ]){
+      const box=document.createElement('div'),number=document.createElement('strong'),heading=document.createElement('span');
+      number.textContent=comma(count);heading.textContent=label;
+      box.append(number,heading);totals.append(box);
+    }
+    const table=document.createElement('table');
+    table.className='mayor-election-table';
+    const caption=document.createElement('caption');
+    caption.textContent='Certified NYC mayoral votes, November 4, 2025 — all boroughs combined';
+    table.append(caption);
+    const thead=document.createElement('thead'),headers=document.createElement('tr');
+    for(const title of ['Candidate','Vote distribution','Votes','Share']){
+      const th=document.createElement('th');th.scope='col';th.textContent=title;headers.append(th);
+    }
+    thead.append(headers);table.append(thead);
+    const body=document.createElement('tbody');
+    for(const candidate of validated.candidates){
+      const tr=document.createElement('tr');
+      const name=document.createElement('th');name.scope='row';name.textContent=candidate.name;
+      const barCell=document.createElement('td'),track=document.createElement('div'),bar=document.createElement('span');
+      track.className='mayor-vote-track';bar.className='mayor-vote-bar';
+      bar.style.width=candidate.vote_share_pct+'%';
+      track.append(bar);barCell.append(track);
+      const votes=document.createElement('td'),share=document.createElement('td');
+      votes.textContent=comma(candidate.votes);
+      share.textContent=candidate.vote_share_pct.toFixed(2)+'%';
+      tr.append(name,barCell,votes,share);body.append(tr);
+    }
+    table.append(body);host.replaceChildren(table);
+  }catch(e){
+    console.warn('Certified mayor election panel unavailable:',e);
+    status.textContent='Certified mayoral results temporarily unavailable. Use the official NYC Board of Elections link below.';
+    totals.replaceChildren();host.replaceChildren();
+  }
+}
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
   const enrollmentMode=mode==='enrollment'&&!!councilLayer;
@@ -1182,6 +1233,7 @@ async function init(){
     void loadACSGeography();
     void loadLegislativeDistricts();
     void loadCouncilEnrollment();
+    void loadCertifiedMayorResults();
     if(geoLayer.getLayers().length !== records.length || !plausibleNYCBounds(geoLayer.getBounds())) {
       throw new Error("NTA polygons could not be placed within the expected New York City map extent. Check the GeoJSON coordinate reference system.");
     }

@@ -335,12 +335,31 @@ async function checkViewport(label, viewport) {
   await page.waitForFunction(()=>document.getElementById('feature-count')?.textContent.trim()==='262');
   assert.equal(await page.locator('#political-field').isVisible(),false);
   assert.equal(await page.locator('#borough').isEnabled(),true);
+
+  // 2025 mayoral election must stay a separate, certified *citywide* panel.
+  await page.locator('#mayor-election-2025 summary').click();
+  await page.waitForFunction(()=>{
+    return document.querySelector('#mayor-election-candidates tbody')?.children.length===8;
+  },null,{timeout:15000});
+  const mayorPanel=await page.locator('#mayor-election-2025').textContent();
+  assert.ok(mayorPanel.includes('Citywide results only.'));
+  assert.ok(mayorPanel.includes('2,218,647'));
+  assert.ok(mayorPanel.includes('2,194,204'));
+  assert.ok(mayorPanel.includes('1,114,184'));
+  assert.ok(mayorPanel.includes('906,614'));
+  assert.ok(mayorPanel.includes('153,749'));
+  assert.ok(!mayorPanel.includes('Harlem voting winner'));
+  const mayorWidth=await page.evaluate(()=>({
+    page:document.documentElement.scrollWidth,viewport:innerWidth
+  }));
+  assert.ok(mayorWidth.page<=mayorWidth.viewport+2,'Certified mayor chart cannot cause sideways page overflow');
+  await page.screenshot({path:OUTPUT+'/nyc-pop-'+label+'-2025-mayor-citywide.png',fullPage:true});
   assert.deepEqual(errors,[], 'Browser runtime JavaScript exceptions');
   console.log(JSON.stringify({viewport:label,viewportPx:viewport,featureCount:262,
     bronxCount:50,queensCount:82,landmarkCount:5,search:'Longwood',title,
     streetTiles:true,streetModeToggle:true,cityMask:true,mockedTiles:true,
     communityBoards:59,communityBoardSelected:'Bronx CB1',
-    mapGridBoardLookup:true,acs2024LayersVerified:true,officialCouncilEnrollment:true,legislativeDistricts:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
+    mapGridBoardLookup:true,acs2024LayersVerified:true,officialCouncilEnrollment:true,certified2025CitywideMayor:true,legislativeDistricts:true,schoolDistricts:32,k12SchoolPoints:educationManifest.nyc_school_count,
     exampleSchool:bronxPublicSchool.properties.id,noJSExceptions:true,measure:measured}));
   await context.close();
 }

@@ -592,3 +592,60 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 
 .council-picker-field select{background:#fff0d3;border:2px solid #241039;font-weight:900}
 @media(max-width:600px){.council-picker-field{width:100%}}
+
+
+/* Official 2025 mayoral contest: CITYWIDE certified votes only, never NTA party labels. */
+.mayor-election-2025{
+  grid-column:1/-1;
+  padding:0;
+  min-width:0;
+  border-top:4px solid #241039;
+  background:#fff9e7;
+}
+.mayor-election-2025 summary{
+  padding:17px 24px;
+  cursor:pointer;
+  display:flex;flex-direction:column;gap:4px;
+  color:#241039;
+  background:linear-gradient(110deg,#fff9e7,#e8ffd5);
+  list-style-position:inside;
+}
+.mayor-election-2025 summary:focus-visible{outline:3px solid #FF3B9D;outline-offset:-4px}
+.mayor-election-2025 summary strong{
+  font:900 clamp(20px,2.1vw,30px)/1.2 Impact,"Arial Black",system-ui,sans-serif;
+  text-transform:uppercase;
+}
+.mayor-election-kicker{font-size:11px;font-weight:900;letter-spacing:.12em;color:#4e2783}
+.mayor-election-hint{font-size:13px;line-height:1.45;font-weight:700;color:#483c5c}
+.mayor-election-inner{padding:14px 24px 24px;border-top:2px solid #241039}
+.mayor-election-inner p{font-size:13px;line-height:1.55}
+.mayor-election-citywide{
+  padding:10px 12px;border:2px solid #241039;
+  background:#fff;font-weight:700;border-radius:8px
+}
+.mayor-election-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:16px 0}
+.mayor-election-totals>div{display:flex;flex-direction:column;gap:4px;min-width:0;
+  padding:13px;background:#C7FF00;border:2px solid #241039;border-radius:9px;
+  box-shadow:3px 3px 0 #241039}
+.mayor-election-totals strong{font-size:clamp(15px,1.7vw,24px);line-height:1.1}
+.mayor-election-totals span{font-size:11px;text-transform:uppercase;font-weight:800}
+#mayor-election-candidates{overflow-x:auto;max-width:100%}
+.mayor-election-table{width:100%;border-collapse:collapse;min-width:500px;font-size:13px;line-height:1.45}
+.mayor-election-table caption{text-align:left;font-weight:800;padding:9px 0}
+.mayor-election-table th,.mayor-election-table td{padding:9px 10px;border-bottom:1px solid #cdbfdc;text-align:right}
+.mayor-election-table th:first-child{text-align:left}
+.mayor-election-table thead th{background:#241039;color:#fff;font-weight:900}
+.mayor-election-table thead th:nth-child(2){width:38%}
+.mayor-election-table tbody tr:first-child{background:#ecffd3}
+.mayor-vote-track{width:100%;height:18px;border:1.5px solid #241039;border-radius:6px;
+  background:#e9e1f1;overflow:hidden}
+.mayor-vote-bar{display:block;height:100%;background:linear-gradient(90deg,#AF68FF,#FF3B9D)}
+.mayor-election-source a{color:#5420a3;font-weight:900;text-decoration:underline}
+@media(max-width:600px){
+ .mayor-election-2025 summary{padding:13px}
+ .mayor-election-inner{padding:11px 12px 18px}
+ .mayor-election-totals{grid-template-columns:1fr;gap:7px}
+ .mayor-election-totals>div{flex-direction:row;align-items:center;justify-content:space-between;padding:9px}
+ .mayor-election-totals strong{font-size:17px}
+ .mayor-election-totals span{font-size:10px}
+}
