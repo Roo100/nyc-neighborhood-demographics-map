@@ -747,3 +747,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .recent-election-other a{display:inline-block;margin:0 14px 7px 0;font-weight:800;color:#5420a3;text-decoration:underline;text-underline-offset:2px}
 #primary-2026-results{max-width:100%;overflow-x:auto}
 @media(max-width:600px){.recent-election-other{padding:12px}.recent-election-other a{display:block;margin:8px 0}}
+
+/* November 2026 official ballot guide — compact, responsive and neutral. */
+.nov-ballot-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.nov-ballot-columns section{background:white;border:2px solid #241039;border-radius:10px;padding:12px 16px;min-width:0}
+.nov-ballot-columns h3,.nov-ballot-proposals h3{margin:0 0 7px;font-size:18px;font-weight:900;color:#241039}
+.nov-ballot-columns ul,.nov-ballot-proposals ol{margin:6px 0;padding-left:21px}
+.nov-ballot-columns li,.nov-ballot-proposals li{margin:6px 0;font-size:14px;line-height:1.45}
+.nov-ballot-proposals{margin:16px 0;padding:16px;background:#f1f9ff;border:2px solid #241039;border-radius:10px}
+.nov-ballot-proposals a,.nov-ballot-links a{color:#421387;font-weight:850;text-decoration:underline;text-underline-offset:2px}
+.nov-ballot-links{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.nov-ballot-links a{display:block;padding:10px 13px;border:2px solid #241039;border-radius:8px;background:#C7FF00;box-shadow:2px 2px 0 #241039;font-size:13px}
+@media(max-width:700px){.nov-ballot-columns{grid-template-columns:1fr}.nov-ballot-links{flex-direction:column}.nov-ballot-proposals{padding:12px}}
