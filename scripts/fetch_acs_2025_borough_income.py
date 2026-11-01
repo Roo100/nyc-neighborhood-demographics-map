@@ -107,7 +107,7 @@ def main():
         "source_url": "https://data.census.gov/table/ACSDT1Y2025.B03002",
         "retrieved_on": date.today().isoformat(), "records": race
     }
-    RACE_TARGET.write_text(json.dumps(race_payload, indent=2) + "\\n")
+    RACE_TARGET.write_text(json.dumps(race_payload, indent=2) + "\n")
     print("Validated all five NYC counties; wrote", TARGET, "and", RACE_TARGET)
 
 
