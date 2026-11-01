@@ -893,3 +893,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
  }
  #map .nyc-demographic-preview h3{font-size:15px!important}
 }
+
+/* New 2025 borough race/ethnicity source, kept distinct from NTA demographics. */
+.borough-race-2025{margin:0 0 15px;padding:12px 14px;background:#e9f8ff;border:2px solid #241039;border-radius:10px}
+.borough-race-2025 h3{font:900 16px/1.25 system-ui,sans-serif;color:#241039;margin:0 0 6px}
+.borough-race-2025 p,.borough-race-2025 #borough-race-2025-value{font-size:12px;line-height:1.45;margin:7px 0;color:#241039}
+.borough-race-2025 a{display:inline-block;margin-top:7px;color:#5420a3;font-size:12px;font-weight:900;text-decoration:underline}
+.borough-race-facts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;margin:9px 0!important}
+.borough-race-facts dt,.borough-race-facts dd{margin:0!important;font-size:12px;line-height:1.45}
+.borough-race-facts dd{text-align:right;font-weight:900}
