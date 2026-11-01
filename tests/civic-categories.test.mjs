@@ -12,12 +12,12 @@ test('civic guide groups BetaNYC boundary categories without duplicates',()=>{
   for(const group of CIVIC_CATEGORY_GROUPS)assert.ok(group.items.length>=2);
 });
 test('mapped geographies are explicitly distinguished from reference-only categories',()=>{
-  for(const id of ['community','council','senate','assembly','congress','schooldistricts','nta','schoolsites']){
+  for(const id of ['community','council','senate','assembly','congress','schooldistricts','nta','schoolsites','precincts','sanitation','fire','zip']){
     const category=getCivicCategory(id);
     assert.ok(category);
     assert.equal(civicCategoryIsMapped(category),true);
   }
-  for(const id of ['precincts','sanitation','fire','health','zip','election']){
+  for(const id of ['policesectors','health','election','court']){
     const category=getCivicCategory(id);
     assert.ok(category);
     assert.equal(civicCategoryIsMapped(category),false);
@@ -29,4 +29,13 @@ test('school districts are geographic, not an attendance zone claim',()=>{
   assert.equal(district.code,'sd');
   assert.match(district.description,/not.*attendance zones/i);
   assert.equal(getCivicCategory('not-a-category'),null);
+});
+
+test('four official NYC civic datasets are map-enabled without BetaNYC redirect',()=>{
+  for(const id of ['precincts','sanitation','fire','zip']){
+    const category=getCivicCategory(id);
+    assert.equal(!!category.native,true);
+    assert.equal(civicCategoryIsMapped(category),true);
+  }
+  assert.match(getCivicCategory('zip').description,/not official USPS/i);
 });
