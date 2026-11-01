@@ -71,6 +71,10 @@ function baseStyle(record){
   const streets=ui['map-detail'].value==='streets';
   // In ACS mode the colored data fills are legible over an actual street grid.
   // Missing/suppressed areas are gray; the original neon borough mode is unchanged.
+  // Keep other boroughs clickable after one borough is selected, but visually de-emphasize them.
+  if(ui.borough.value!=='all'&&record.borough!==ui.borough.value) return {
+    color:'#241039',weight:.65,opacity:.35,fillColor:'#b8cad8',fillOpacity:.08
+  };
   if(ui.borough.value==='all') return {
     color:'#241039',weight:streets?.8:.72,opacity:streets?.48:.9,
     fillColor:fill,fillOpacity:censusMode?(streets?.60:.94):(streets?.27:1)
@@ -990,7 +994,9 @@ function render(){
 
   // Preserve the 2020 NTA source and its search when exploring neighborhoods.
   geoLayer.clearLayers();
-  geoLayer.addData({type:'FeatureCollection',features:visible.map(r=>r.feature)});
+  // Retain all borough geometries for pointer hit-testing. Filter the zoom target,
+  // search choices and profile, not the clickability of adjacent boroughs.
+  geoLayer.addData({type:'FeatureCollection',features:records.map(r=>r.feature)});
   ui['nta-options'].replaceChildren();
   for(const r of visible.slice().sort((a,b)=>a.name.localeCompare(b.name))){
     const option=document.createElement('option');
@@ -1044,7 +1050,7 @@ function render(){
   landmarkLayer.clearLayers();
   if(!schoolMode){
     for(const landmark of LANDMARKS){
-      if(borough!=='all'&&borough!==landmark.borough)continue;
+      // Landmarks remain available as borough switch targets after filtering.
       const icon=L.divIcon({
         className:'comic-landmark',
         html:'<span class="comic-landmark-inner" aria-hidden="true">'+landmark.symbol+'</span>',
@@ -1055,7 +1061,7 @@ function render(){
       marker.bindTooltip(landmark.name+' · '+landmark.borough,
         {direction:'top',offset:[0,-21],className:'comic-tooltip'});
       marker.on('click',()=>{
-        if(ui.borough.value==='all')switchBorough(landmark.borough);
+        if(ui.borough.value!==landmark.borough)switchBorough(landmark.borough);
         status(landmark.name+' is in '+landmark.borough+'. Explore the selected geography layer.');
       });
     }
@@ -1085,16 +1091,16 @@ function render(){
     const target=selectedSchoolDistrict?
       schoolDistrictLayer.getLayers().find(x=>Number(x.feature.properties.district)===selectedSchoolDistrict.code):null;
     if(target)fitNYCBounds(target.getBounds(),{padding:[35,35],maxZoom:13,animate:false});
-    else if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35],animate:false});
+    else if(visible.length)fitNYCBounds(L.geoJSON({type:'FeatureCollection',features:visible.map(r=>r.feature)}).getBounds(),{padding:[35,35],animate:false});
   }else if(schoolMode){
     selectedSchool?schoolProfile(selectedSchool):schoolOverview();
     if(selectedSchool)map.setView(selectedSchool.coordinates,15,{animate:false});
-    else if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35],animate:false});
+    else if(visible.length)fitNYCBounds(L.geoJSON({type:'FeatureCollection',features:visible.map(r=>r.feature)}).getBounds(),{padding:[35,35],animate:false});
     refreshSchoolPins();
   }else{
     if(!selected)(borough==='all'?overviewProfile():boroughProfile(borough));
     if(selected)showACSProfile(selected);
-    if(visible.length)fitNYCBounds(geoLayer.getBounds(),{padding:[35,35]});
+    if(visible.length)fitNYCBounds(L.geoJSON({type:'FeatureCollection',features:visible.map(r=>r.feature)}).getBounds(),{padding:[35,35]});
   }
 }
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status('Selected '+found.name+', '+found.borough+'. Click any street in the neighborhood to view its community board.');}else{status('No matching neighborhood in the selected borough. Try another spelling or clear the borough filter.',true);}}
@@ -1266,7 +1272,7 @@ async function init(){
         // The clicked point, not the NTA centroid, determines the board.
         // A single NTA can cross more than one board or school district.
         if(event.originalEvent)L.DomEvent.stopPropagation(event.originalEvent);
-        if(ui.borough.value==='all')switchBorough(r.borough);
+        if(ui.borough.value!==r.borough)switchBorough(r.borough);
         display(r,false);
         identifyCommunityAtPoint(event.latlng,r);
         status('Showing neighborhood and civic information for '+r.name+', '+r.borough+'.');
