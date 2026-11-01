@@ -1,6 +1,6 @@
 // Civic category catalog informed by BetaNYC Boundaries' public navigation.
-// Only entries with a pinned and validated NYC POP! dataset are mapped here.
-// Other entries link to BetaNYC; do not fabricate geographic assignments.
+// Pinned layers and strictly validated official on-demand NYC Open Data layers
+// are mapped here. Other categories remain reference-only.
 const BETA='https://boundaries.beta.nyc/';
 const linked=code=>code?BETA+'?map='+code:BETA;
 export const CIVIC_CATEGORY_GROUPS=[
@@ -16,10 +16,10 @@ export const CIVIC_CATEGORY_GROUPS=[
     {id:'schoolsites',label:'K–12 school locations',emoji:'🏫',native:'schoolsites',description:'Mapped NYSED school locations, not school attendance-zone assignments.'}
   ]},
   {id:'services',label:'Safety & city services',items:[
-    {id:'precincts',label:'Police precincts',emoji:'🚔',code:'pp'},
+    {id:'precincts',label:'Police precincts',emoji:'🚔',native:'precincts',code:'pp',description:'78 official NYC DCP 2026 NYPD precinct boundaries, loaded from NYC Open Data on selection.'},
     {id:'policesectors',label:'Police sectors',emoji:'🚨'},
-    {id:'sanitation',label:'Sanitation districts',emoji:'🗑️',code:'dsny'},
-    {id:'fire',label:'Fire battalions',emoji:'🔥',code:'fb'},
+    {id:'sanitation',label:'Sanitation districts',emoji:'🗑️',native:'sanitation',code:'dsny',description:'59 official DSNY sanitation-service districts, September 2026. These may share community-district geometry but are independently sourced.'},
+    {id:'fire',label:'Fire battalions',emoji:'🔥',native:'fire',code:'fb',description:'49 2026 NYC DCP FDNY battalion boundaries. Boundaries identify service areas, not a firehouse address.'},
     {id:'health',label:'Health center districts',emoji:'🩺',code:'hc'},
     {id:'uhf',label:'UHF 42 neighborhoods',emoji:'🏥'}
   ]},
@@ -31,7 +31,7 @@ export const CIVIC_CATEGORY_GROUPS=[
     {id:'ibz',label:'Industrial business zones',emoji:'🏭',code:'ibz'},
     {id:'puma',label:'Public Use Microdata Areas',emoji:'📋'},
     {id:'cdta',label:'Citywide district tabulation areas',emoji:'📊'},
-    {id:'zip',label:'ZIP codes',emoji:'📫'}
+    {id:'zip',label:'Census ZIP areas (ZCTAs)',emoji:'📫',native:'zip',code:'zip',description:'221 Census ZIP Code Tabulation Areas (ZCTAs), not official USPS delivery ZIP assignments. Source: NYC OTI 2026.'}
   ]},
   {id:'elections',label:'Voting & courts',items:[
     {id:'election',label:'Election districts',emoji:'🗳️'},
