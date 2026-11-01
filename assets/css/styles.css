@@ -776,3 +776,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .poll-site-popup .poll-site-warning{background:#fff1cb;padding:8px;border-left:3px solid #241039}
 .poll-site-popup a{display:inline-block;font-weight:900;color:#51229d;margin-top:5px}
 @media(max-width:600px){.polling-sites-field{flex:1 1 100%!important;min-width:0!important}.poll-sites-info{padding:10px 12px}}
+
+/* Borough-level 2025 income is deliberately distinct from 2020–2024 NTA estimates. */
+.borough-income-2025{margin:0 0 15px;padding:12px 14px;background:#e9ffcb;border:2px solid #241039;border-radius:10px}
+.borough-income-2025 h3{font:900 16px/1.3 system-ui,sans-serif;color:#241039;margin:0 0 6px}
+.borough-income-2025 p{font-size:12px!important;line-height:1.45!important;margin:7px 0!important}
+.borough-income-2025 a{display:inline-block;margin-top:5px;color:#5420a3;font-size:12px;font-weight:900;text-decoration:underline}
