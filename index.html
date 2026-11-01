@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=civic-popups-2026-10-31-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=civic-category-explorer-2026-10-31-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=civic-popups-2026-10-31-1"></script>
+  <script type="module" src="assets/js/app.js?v=civic-category-explorer-2026-10-31-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -136,6 +136,20 @@
       <section class="civic-panel" aria-labelledby="civic-panel-title">
           <h3 id="civic-panel-title">Your NYC civic guide</h3>
           <p id="civic-context">Select a borough or community board to see its government context. Legislative districts may cross neighborhoods.</p>
+          <section class="civic-boundary-explorer" aria-labelledby="civic-boundaries-title">
+            <div class="civic-explorer-header">
+              <div>
+                <h4 id="civic-boundaries-title">Explore NYC boundaries</h4>
+                <p>Choose a district category to see verified boundaries and identify the district at your selected map point.</p>
+              </div>
+              <button type="button" class="civic-explorer-clear" id="civic-explorer-clear">Clear boundary overlay</button>
+            </div>
+            <div id="civic-category-groups" class="civic-category-groups" aria-label="District categories"></div>
+            <div id="civic-category-result" class="civic-category-result" role="status" aria-live="polite">
+              Select a category above. Verified NYC POP! boundaries can be drawn on the map; other categories link to BetaNYC while their source data are reviewed.
+            </div>
+            <p class="civic-explorer-credit">Category organization informed by <a href="https://boundaries.beta.nyc/?map=sd" target="_blank" rel="noopener noreferrer">BetaNYC Boundaries</a>. Administrative districts overlap; school districts are not attendance zones.</p>
+          </section>
           <p class="borough-president-line"><strong>Borough president:</strong> <span id="borough-president">Select a borough</span></p>
           <div class="civic-links">
             <a href="https://www.myschools.nyc/en/" target="_blank" rel="noopener noreferrer">Browse K–12 schools &amp; admissions on MySchools</a>
