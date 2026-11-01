@@ -8,6 +8,7 @@ import {MAYOR_2025_CITYWIDE,validateCitywideMayoralResult} from './elections.js'
 import {fetchNYCPollSites,OFFICIAL_POLL_LOOKUP} from './polling.js';
 import {BOROUGH_INCOME_2025_FILE,validateBoroughIncome2025} from './borough-income.js';
 import {BOROUGH_RACE_2025_FILE,validateBoroughRace2025,RACE_GROUPS} from './borough-race.js';
+import {buildCivicCard} from './civic-card.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -306,7 +307,7 @@ async function loadACSGeography(){
   }
 }
 function closeMobileCivicCard(){
-  map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay, .nyc-demographic-preview').forEach(el=>el.remove());
+  map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay, .nyc-demographic-preview, .nyc-civic-preview').forEach(el=>el.remove());
 }
 function resetMapPointLookup(){
   selectedMapPoint=null;selectedMapNeighborhood=null;
@@ -345,63 +346,73 @@ function addCouncilEnrollmentToPopup(root,latlng,legislative){
   section.append(summary,list,note);root.append(section);
 }
 function showCivicPopup(latlng,neighborhood,communityMatch){
-  // Compact, fixed-position demographic card inside the map. This never uses
-  // Leaflet's anchored popup, so no selected point can move it offscreen.
+  // The clicked map point, never an NTA centroid, determines administrative
+  // districts. Detailed racial and income figures stay in the sidebar.
   map.closePopup();
   closeMobileCivicCard();
+  const schoolMatch=lookupPolygonAtPoint(schoolDistrictSpatialIndex,latlng.lat,latlng.lng);
+  const legislative=identifyLegislators(legislativeLookup,latlng.lat,latlng.lng);
+  const card=buildCivicCard({
+    neighborhood,boardMatch:communityMatch,schoolMatch,
+    legislators:legislative,officials:legislativeOfficials,
+    boroughPresidents:BOROUGH_PRESIDENTS
+  });
   const root=document.createElement('section');
-  root.className='nyc-demographic-preview';
+  root.className='nyc-civic-preview';
   root.setAttribute('role','region');
-  root.setAttribute('aria-label','Selected neighborhood demographics');
+  root.setAttribute('aria-label','Community board, elected officials and school zone information');
   const close=document.createElement('button');
-  close.type='button';close.className='nyc-demographic-preview-close';
-  close.textContent='×';close.setAttribute('aria-label','Close demographic preview');
+  close.type='button';close.className='nyc-civic-preview-close';
+  close.textContent='×';close.setAttribute('aria-label','Close civic information');
   close.addEventListener('click',()=>root.remove());
   root.append(close);
-  const title=document.createElement('h3');
-  title.textContent=neighborhood?.name||'Selected map location';
-  root.append(title);
-  if(neighborhood?.borough){
-    const subtitle=document.createElement('p');
-    subtitle.className='nyc-demographic-preview-period';
-    subtitle.textContent=neighborhood.borough+' · ACS 2020–2024';
-    root.append(subtitle);
-  }
-  const information=neighborhood&&acsReady?acsProfileRows(neighborhood):null;
-  if(neighborhood?.special){
-    const message=document.createElement('p');
-    message.className='nyc-demographic-preview-message';
-    message.textContent='Special-purpose area. Reliable residential demographics are not available for this location.';
-    root.append(message);
-  }else if(information){
-    const facts=document.createElement('dl');
-    const shortLabels={
-      'Approx. household median income':'Approx. median income',
-      'Poverty rate':'Poverty',
-      'White non-Hispanic':'White',
-      'Black non-Hispanic':'Black',
-      'Asian non-Hispanic':'Asian',
-      'Hispanic (any race)':'Hispanic / Latino',
-      'Other non-Hispanic':'Other'
-    };
-    for(const [label,value] of information.rows){
-      if(label==='Poverty margin of error')continue;
+  const heading=document.createElement('h3');
+  heading.textContent=card.title;root.append(heading);
+  const context=document.createElement('p');
+  context.className='nyc-civic-preview-context';
+  context.textContent=card.borough+' · Selected map point';root.append(context);
+  const addSection=(headingText,items)=>{
+    const section=document.createElement('section');
+    section.className='nyc-civic-preview-section';
+    const heading=document.createElement('h4');
+    heading.textContent=headingText;section.append(heading);
+    const list=document.createElement('dl');
+    for(const [label,value] of items){
       const dt=document.createElement('dt'),dd=document.createElement('dd');
-      dt.textContent=shortLabels[label]||label;
-      dd.textContent=value.split(' (±')[0];
-      facts.append(dt,dd);
+      dt.textContent=label;dd.textContent=value;
+      list.append(dt,dd);
     }
-    root.append(facts);
-    const note=document.createElement('p');
-    note.className='nyc-demographic-preview-note';
-    note.textContent='Approximate estimates; see the profile for uncertainty and sources.';
-    root.append(note);
-  }else{
-    const message=document.createElement('p');
-    message.className='nyc-demographic-preview-message';
-    message.textContent=neighborhood?'Demographic estimates are loading or unavailable.':'Select a neighborhood to see its demographics.';
-    root.append(message);
+    section.append(list);root.append(section);
+  };
+  addSection('Community board',[['Board at this point',card.board]]);
+  addSection('Elected representatives',card.officials);
+  addSection('Schools and zoning',[['Geographic district',card.school],
+    ['Attendance zone','Verify by home address and grade']]);
+  const notice=document.createElement('p');
+  notice.className='nyc-civic-preview-notice';
+  notice.textContent=card.schoolZoneNotice;
+  root.append(notice);
+  const finder=document.createElement('a');
+  finder.className='nyc-civic-preview-school-link';
+  finder.href=card.schoolFinder;finder.target='_blank';finder.rel='noopener noreferrer';
+  finder.textContent='Find my zoned school · NYCPS';
+  root.append(finder);
+  const resource=document.createElement('details');
+  resource.className='nyc-civic-preview-resources';
+  const summary=document.createElement('summary');
+  summary.textContent='Official representative and board directories';
+  resource.append(summary);
+  const links=document.createElement('div');
+  for(const [label,url] of card.links){
+    const link=document.createElement('a');
+    link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+    link.textContent=label;links.append(link);
   }
+  resource.append(links);root.append(resource);
+  const citation=document.createElement('p');
+  citation.className='nyc-civic-preview-source';
+  citation.textContent='District boundaries: NYC Planning 2026. Council and Senate representative names: October 31, 2026 verification snapshot where available. Confirm current school zones and officeholders with official sources.';
+  root.append(citation);
   L.DomEvent.disableClickPropagation(root);
   L.DomEvent.disableScrollPropagation(root);
   map.getContainer().append(root);
