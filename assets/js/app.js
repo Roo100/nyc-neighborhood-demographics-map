@@ -340,13 +340,13 @@ function addCouncilEnrollmentToPopup(root,latlng,legislative){
   section.append(summary,list,note);root.append(section);
 }
 function showCivicPopup(latlng,neighborhood,communityMatch){
-  // Keep the neighborhood popup demographic-only. Civic and school lookups
-  // remain in the dedicated dashboard controls and sidebar, not this card.
+  // Compact demographic preview: keep the full uncertainty detail in the
+  // adjacent neighborhood profile. Never anchor a tall popup offscreen.
   const root=document.createElement('div');
   root.className='nyc-pop-info-card';
   const eyebrow=document.createElement('div');
   eyebrow.className='nyc-pop-info-eyebrow';
-  eyebrow.textContent='NYC POP! · NEIGHBORHOOD DEMOGRAPHICS';
+  eyebrow.textContent='NEIGHBORHOOD SNAPSHOT';
   root.append(eyebrow);
   const title=document.createElement('h3');
   title.className='nyc-pop-info-title';
@@ -355,7 +355,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
   if(neighborhood?.borough){
     const subtitle=document.createElement('p');
     subtitle.className='nyc-pop-info-subtitle';
-    subtitle.textContent=neighborhood.borough+' · 2020–2024 ACS estimates';
+    subtitle.textContent=neighborhood.borough+' · ACS 2020–2024';
     root.append(subtitle);
   }
   const information=neighborhood&&acsReady?acsProfileRows(neighborhood):null;
@@ -363,41 +363,40 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
     const facts=document.createElement('dl');
     facts.className='nyc-pop-info-facts';
     for(const [label,value] of information.rows){
+      if(label==='Poverty margin of error')continue;
       const dt=document.createElement('dt'),dd=document.createElement('dd');
-      dt.textContent=label;dd.textContent=value;facts.append(dt,dd);
+      dt.textContent=label.replace('Approx. household median income','Approx. median income')
+        .replace(' non-Hispanic','').replace(' (any race)',' / Latino');
+      // Display the estimate only; the sidebar retains complete 90% MOEs.
+      dd.textContent=label==='Approx. household median income'||label==='Poverty rate'
+        ?value:value.replace(/ \(±.*?\)$/,'');
+      facts.append(dt,dd);
     }
     root.append(facts);
     const note=document.createElement('p');
     note.className='nyc-pop-info-disclaimer';
-    note.textContent='Source: Census ACS 2020–2024, aggregated to NYC Planning neighborhood areas. Income is an approximate grouped-bin estimate; unreliable figures are withheld. Political enrollment is available separately by City Council district.';
+    note.textContent='Approximate ACS estimates. Full margins of error and methodology appear in the neighborhood profile.';
     root.append(note);
   }else{
     const note=document.createElement('p');
     note.className='nyc-pop-info-disclaimer';
-    note.textContent=neighborhood?'Neighborhood demographic estimates are loading or unavailable.':'Select a neighborhood polygon to view its income, poverty, and racial/ethnic estimates. Council-district voter enrollment is available in its own map layer.';
+    note.textContent=neighborhood?'Demographic data are loading or unavailable.':'Select a neighborhood to see its demographic estimates.';
     root.append(note);
   }
   map.closePopup();
   closeMobileCivicCard();
-  if(map.getSize().x<600){
-    const overlay=document.createElement('section');
-    overlay.className='nyc-pop-mobile-overlay';
-    overlay.setAttribute('role','dialog');
-    overlay.setAttribute('aria-label','Neighborhood demographics');
-    const close=document.createElement('button');
-    close.type='button';close.className='nyc-pop-mobile-close';
-    close.textContent='×';close.setAttribute('aria-label','Close neighborhood demographics');
-    close.addEventListener('click',()=>overlay.remove());
-    overlay.append(close,root);
-    L.DomEvent.disableClickPropagation(overlay);
-    L.DomEvent.disableScrollPropagation(overlay);
-    map.getContainer().append(overlay);
-    return;
-  }
-  L.popup({className:'nyc-pop-info-popup',maxWidth:335,minWidth:245,
-    maxHeight:Math.max(220,Math.min(390,map.getSize().y-100)),autoPan:true,
-    autoPanPaddingTopLeft:[18,24],autoPanPaddingBottomRight:[18,26]})
-    .setLatLng(latlng).setContent(root).openOn(map);
+  const overlay=document.createElement('section');
+  overlay.className='nyc-pop-mobile-overlay nyc-pop-snapshot-overlay';
+  overlay.setAttribute('role','region');
+  overlay.setAttribute('aria-label','Neighborhood demographic snapshot');
+  const close=document.createElement('button');
+  close.type='button';close.className='nyc-pop-mobile-close';
+  close.textContent='×';close.setAttribute('aria-label','Close neighborhood demographics');
+  close.addEventListener('click',()=>overlay.remove());
+  overlay.append(close,root);
+  L.DomEvent.disableClickPropagation(overlay);
+  L.DomEvent.disableScrollPropagation(overlay);
+  map.getContainer().append(overlay);
 }
 function identifyCommunityAtPoint(latlng,neighborhood=null){
   if(!latlng||!Number.isFinite(latlng.lat)||!Number.isFinite(latlng.lng))return;
