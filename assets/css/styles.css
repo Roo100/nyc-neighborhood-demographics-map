@@ -992,3 +992,41 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
   }
   #map .nyc-civic-preview h3{font-size:17px!important}
 }
+
+/* BetaNYC-inspired category navigation for public NYC POP! civic guide.
+   Categories are an overlay chooser, NOT a claim that all sources are local. */
+.civic-boundary-explorer{margin:15px 0 17px;padding:16px;background:#fff;border:3px solid #241039;border-radius:12px;box-shadow:4px 4px 0 #241039}
+.civic-explorer-header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.civic-explorer-header h4{font:900 clamp(19px,2vw,25px)/1.15 Impact,"Arial Black",system-ui,sans-serif;text-transform:uppercase;margin:0 0 5px;color:#241039}
+.civic-explorer-header p{margin:0!important;max-width:600px;font-size:12px!important;color:#483c5c!important}
+.civic-explorer-clear{min-height:36px!important;max-width:190px;padding:8px 11px!important;border:2px solid #241039!important;border-radius:7px!important;background:#fff!important;color:#241039!important;font:850 11px/1.25 system-ui,sans-serif!important;box-shadow:2px 2px 0 #241039!important}
+.civic-explorer-clear:hover{background:#C7FF00!important}
+.civic-category-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:10px}
+.civic-category-group{min-width:0;border:2px solid #241039;border-radius:9px;background:#f6f3ff;overflow:hidden}
+.civic-category-group summary{min-height:40px;padding:10px 12px;background:#e7d9ff;color:#241039;cursor:pointer;font-weight:900;font-size:12px;line-height:1.3}
+.civic-category-group summary:hover{background:#d9f8ff}
+.civic-category-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:9px}
+.civic-category-button{display:flex;flex-direction:column;align-items:start;justify-content:space-between;gap:2px;min-width:0;min-height:59px!important;height:auto!important;padding:7px 9px!important;text-align:left!important;border:2px solid #241039!important;border-radius:7px!important;background:white!important;color:#241039!important;box-shadow:2px 2px 0 #241039;font:850 11px/1.22 system-ui,sans-serif!important;overflow-wrap:anywhere}
+.civic-category-button small{color:#5e4f70;font-size:9px;font-weight:700;line-height:1.25}
+.civic-category-button:hover,.civic-category-button:focus-visible{background:#e9fbff!important}
+.civic-category-button.active,.civic-category-button[aria-pressed="true"]{background:#C7FF00!important;box-shadow:2px 2px 0 #FF3B9D!important}
+.civic-category-result{margin-top:12px;padding:13px 14px;border:2px solid #241039;border-radius:9px;background:#e9f8ff;color:#241039;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.civic-category-result strong{display:block;margin-bottom:4px;font-size:15px;font-weight:950}
+.civic-category-result p{margin:5px 0!important;font-size:12px!important;color:#241039!important}
+.civic-category-result a{display:inline-block;margin-top:8px;color:#4f238a;font-weight:900;font-size:12px;text-decoration:underline}
+.civic-category-result .civic-category-description{font-size:11px!important;color:#4f4262!important}
+.civic-explorer-credit{margin:9px 0 0!important;font-size:10px!important;color:#584c68!important}
+.civic-explorer-credit a{font-weight:800;text-decoration:underline}
+.civic-directory,.civic-methods{border:1px solid #756385;border-radius:8px;margin:12px 0;padding:10px;background:#fff}
+.civic-directory summary,.civic-methods summary{font-weight:900;font-size:13px;cursor:pointer;color:#241039}
+@media(max-width:1050px){
+ .civic-category-groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+ .civic-boundary-explorer{padding:11px;margin:10px 0}
+ .civic-explorer-header{display:block}
+ .civic-explorer-clear{max-width:none;width:100%;margin-top:9px}
+ .civic-category-groups{grid-template-columns:1fr;gap:7px}
+ .civic-category-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .civic-category-button{min-height:51px!important}
+}
