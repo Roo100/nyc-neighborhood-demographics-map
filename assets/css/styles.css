@@ -902,3 +902,93 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .borough-race-facts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;margin:9px 0!important}
 .borough-race-facts dt,.borough-race-facts dd{margin:0!important;font-size:12px;line-height:1.45}
 .borough-race-facts dd{text-align:right;font-weight:900}
+
+
+/* Civic map card: point-specific board, representatives and school-zone lookup.
+   Occupies the lower-right safe region, never covers the legend at upper left
+   or the zoom control at upper right. Long content scrolls inside the card. */
+#map .nyc-civic-preview{
+  position:absolute!important;z-index:1450!important;
+  top:auto!important;right:12px!important;bottom:44px!important;left:auto!important;
+  width:min(345px,calc(100% - 245px))!important;
+  max-height:calc(100% - 155px)!important;
+  min-width:0!important;overflow-x:hidden!important;overflow-y:auto!important;
+  margin:0!important;padding:12px 14px!important;
+  border:3px solid #241039!important;border-radius:12px!important;
+  box-shadow:4px 5px 0 #241039!important;background:white!important;
+  color:#241039!important;font:12px/1.35 system-ui,sans-serif!important;
+  overscroll-behavior:contain;
+}
+#map .nyc-civic-preview h3{
+  font:900 clamp(17px,1.8vw,22px)/1.12 Impact,"Arial Black",system-ui,sans-serif!important;
+  margin:0 34px 4px 0!important;text-transform:uppercase;color:#241039!important;
+  overflow-wrap:anywhere
+}
+#map .nyc-civic-preview-context{
+  margin:0 0 8px!important;font-size:11px!important;font-weight:800!important;
+  color:#57436d!important
+}
+#map .nyc-civic-preview-section{
+  border-top:2px solid #241039;padding-top:8px;margin-top:8px
+}
+#map .nyc-civic-preview h4{
+  font:900 12px/1.25 system-ui,sans-serif!important;
+  text-transform:uppercase;letter-spacing:.02em;color:#241039!important;
+  margin:0 0 6px!important
+}
+#map .nyc-civic-preview dl{
+  display:grid!important;grid-template-columns:minmax(85px,.8fr) minmax(0,1.2fr)!important;
+  gap:6px 9px!important;margin:0!important;padding:0!important;
+}
+#map .nyc-civic-preview dt,#map .nyc-civic-preview dd{
+  padding:0!important;margin:0!important;text-align:left!important;
+  font:700 11px/1.34 system-ui,sans-serif!important;overflow-wrap:anywhere!important
+}
+#map .nyc-civic-preview dt{color:#58486b!important}
+#map .nyc-civic-preview dd{font-weight:900!important;color:#241039!important}
+#map .nyc-civic-preview .nyc-civic-preview-close{
+  position:sticky!important;top:0!important;float:right!important;
+  width:30px!important;min-width:30px!important;height:30px!important;
+  min-height:30px!important;padding:0!important;margin:0!important;
+  display:grid!important;place-items:center!important;
+  border:2px solid #241039!important;border-radius:50%!important;
+  background:#C7FF00!important;color:#241039!important;
+  font-size:20px!important;line-height:1!important;cursor:pointer!important
+}
+#map .nyc-civic-preview-notice{
+  margin:8px 0!important;padding:7px 8px!important;
+  border-left:3px solid #241039!important;background:#f3efff!important;
+  color:#38294e!important;font:650 11px/1.4 system-ui,sans-serif!important
+}
+#map .nyc-civic-preview-school-link{
+  display:block!important;margin:7px 0!important;padding:8px 9px!important;
+  border:2px solid #241039!important;border-radius:7px!important;
+  background:#C7FF00!important;color:#241039!important;
+  font:900 11px/1.3 system-ui,sans-serif!important;text-align:center!important;
+  text-decoration:underline!important
+}
+#map .nyc-civic-preview-resources{
+  border-top:1px solid #241039!important;margin-top:9px!important;padding-top:7px!important
+}
+#map .nyc-civic-preview-resources summary{
+  font:800 11px/1.35 system-ui,sans-serif!important;cursor:pointer!important;
+}
+#map .nyc-civic-preview-resources div{
+  display:flex!important;flex-wrap:wrap!important;gap:6px 11px!important;margin-top:7px!important
+}
+#map .nyc-civic-preview-resources a{
+  font:750 11px/1.35 system-ui,sans-serif!important;
+  color:#5420a3!important;text-decoration:underline!important
+}
+#map .nyc-civic-preview-source{
+  margin:8px 0 0!important;font:650 10px/1.4 system-ui,sans-serif!important;
+  color:#57436d!important
+}
+@media(max-width:700px){
+  #map .nyc-civic-preview{
+    right:9px!important;bottom:38px!important;
+    width:min(315px,calc(100% - 20px))!important;
+    max-height:calc(100% - 155px)!important;padding:10px 11px!important
+  }
+  #map .nyc-civic-preview h3{font-size:17px!important}
+}
