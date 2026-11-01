@@ -782,3 +782,55 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.l
 .borough-income-2025 h3{font:900 16px/1.3 system-ui,sans-serif;color:#241039;margin:0 0 6px}
 .borough-income-2025 p{font-size:12px!important;line-height:1.45!important;margin:7px 0!important}
 .borough-income-2025 a{display:inline-block;margin-top:5px;color:#5420a3;font-size:12px;font-weight:900;text-decoration:underline}
+
+/* Oct 31: screenshot fix — compact demographic snapshot stays inside map.
+   No Leaflet anchored popup may extend above the viewport. */
+#map .nyc-pop-snapshot-overlay{
+  position:absolute;z-index:1300;
+  top:12px;right:70px;left:auto;bottom:auto;
+  width:min(286px,calc(100% - 255px));
+  max-width:none;
+  max-height:calc(100% - 24px);
+  overflow-y:auto;overflow-x:hidden;
+  border:3px solid #241039;border-radius:11px;
+  background:white;box-shadow:4px 5px 0 #241039;
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-card{padding:10px 11px 12px}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-eyebrow{
+  font-size:9px;padding:3px 6px;margin:0 34px 5px 0
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-title{
+  font-size:clamp(16px,1.7vw,21px);line-height:1.1;
+  margin:2px 0 4px!important;overflow-wrap:anywhere
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-subtitle{
+  font-size:11px;line-height:1.3;margin:0 0 6px!important
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-facts{
+  grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);
+  gap:5px 9px;margin:7px 0;padding:8px 0;
+  border-top:1px solid #241039;border-bottom:1px solid #241039
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-facts dt,
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-facts dd{
+  font-size:11px;line-height:1.23;margin:0
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-facts dd{text-align:right}
+#map .nyc-pop-snapshot-overlay .nyc-pop-info-disclaimer{
+  font-size:9px!important;line-height:1.3!important;margin:6px 0 0!important
+}
+#map .nyc-pop-snapshot-overlay .nyc-pop-mobile-close{
+  position:sticky;top:5px;float:right;margin:4px 4px 0 0;
+  width:29px!important;height:29px!important;min-height:29px!important
+}
+@media(max-width:700px){
+  #map .nyc-pop-snapshot-overlay{
+    left:57px;right:9px;top:9px;width:auto;
+    max-height:calc(100% - 18px)
+  }
+  #map .nyc-pop-snapshot-overlay .nyc-pop-info-title{font-size:18px}
+}
+@media(max-width:360px){
+  #map .nyc-pop-snapshot-overlay{left:49px;right:6px}
+  #map .nyc-pop-snapshot-overlay .nyc-pop-info-facts{grid-template-columns:1.1fr .9fr}
+}
