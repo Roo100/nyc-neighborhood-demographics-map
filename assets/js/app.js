@@ -6,6 +6,7 @@ import {DISTRICT_KINDS,OFFICIAL_LEGISLATIVE_DIRS,validateDistrictGeoJSON,validat
 import {ENROLLMENT_FILE,PARTY_OPTIONS,validateCouncilEnrollment,enrollmentShare,partyFill,partyLegend,enrollmentDetails} from './political.js';
 import {MAYOR_2025_CITYWIDE,validateCitywideMayoralResult} from './elections.js';
 import {fetchNYCPollSites,OFFICIAL_POLL_LOOKUP} from './polling.js';
+import {BOROUGH_INCOME_2025_FILE,validateBoroughIncome2025} from './borough-income.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -43,7 +44,7 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   legislativeLookup={},legislativeOfficials=null,
   councilEnrollment=new Map(),enrollmentReady=false,
   councilLayer=null,selectedCouncil=null,
-  pollLayer=null,pollRequest=0,pollCache=new Map();
+  pollLayer=null,pollRequest=0,pollCache=new Map(),boroughIncome2025=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -895,7 +896,8 @@ function updateBoroughIncome2025(){
   panel.hidden=ui['civic-layer'].value!=='nta';
   if(code){
     description.textContent=borough+' (county '+code+') · 2025 ACS one-year estimates, 2025 inflation-adjusted dollars.';
-    value.textContent='2025 Census borough figures are available at the official source. The dashboard is withholding the numeric value until B19013 estimate and 90% margin of error are checked against the release.';
+    const record=boroughIncome2025?.get(borough);
+    value.textContent=record?'Median household income: '+new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(record.median_household_income_usd)+' (90% margin of error ±'+new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(record.moe_90_usd)+')':'2025 Census borough figures are available at the official source. The dashboard is withholding the numeric value until B19013 estimate and 90% margin of error are checked against the release.';
     link.textContent='View official 2025 Census income for '+borough;
     link.href='https://data.census.gov/table/ACSDT1Y2025.B19013?g=050XX00US'+code;
   }else{
@@ -903,6 +905,17 @@ function updateBoroughIncome2025(){
     value.textContent='Choose a borough above to open the correct official 2025 Census income table. Neighborhood income continues to use the 2020–2024 five-year ACS.';
     link.textContent='Explore official 2025 Census county income tables';
     link.href='https://data.census.gov/table/ACSDT1Y2025.B19013?g=050XX00US36005,36047,36061,36081,36085';
+  }
+}
+async function loadBoroughIncome2025(){
+  try{
+    boroughIncome2025=validateBoroughIncome2025(await download(BOROUGH_INCOME_2025_FILE));
+    updateBoroughIncome2025();
+  }catch(error){
+    // Fail closed: missing or invalid 2025 values must never be presented as verified.
+    console.info('2025 borough incomes pending source verification:',error.message);
+    boroughIncome2025=null;
+    updateBoroughIncome2025();
   }
 }
 function render(){
@@ -1271,6 +1284,7 @@ async function init(){
     void loadCommunityGeography();
     void loadEducationGeography();
     void loadACSGeography();
+    void loadBoroughIncome2025();
     void loadLegislativeDistricts();
     void loadCouncilEnrollment();
     // Certified June 2026 primary results are rendered directly from the verified BOE recap.
