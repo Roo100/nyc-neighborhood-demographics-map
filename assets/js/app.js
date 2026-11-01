@@ -301,7 +301,7 @@ async function loadACSGeography(){
   }
 }
 function closeMobileCivicCard(){
-  map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay').forEach(el=>el.remove());
+  map?.getContainer()?.querySelectorAll('.nyc-pop-mobile-overlay, .nyc-demographic-preview').forEach(el=>el.remove());
 }
 function resetMapPointLookup(){
   selectedMapPoint=null;selectedMapNeighborhood=null;
@@ -383,7 +383,7 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
       if(label==='Poverty margin of error')continue;
       const dt=document.createElement('dt'),dd=document.createElement('dd');
       dt.textContent=shortLabels[label]||label;
-      dd.textContent=value.replace(/ \\(±.*?\\)$/,'');
+      dd.textContent=value.split(' (±')[0];
       facts.append(dt,dd);
     }
     root.append(facts);
