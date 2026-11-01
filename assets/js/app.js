@@ -9,6 +9,7 @@ import {fetchNYCPollSites,OFFICIAL_POLL_LOOKUP} from './polling.js';
 import {BOROUGH_INCOME_2025_FILE,validateBoroughIncome2025} from './borough-income.js';
 import {BOROUGH_RACE_2025_FILE,validateBoroughRace2025,RACE_GROUPS} from './borough-race.js';
 import {buildCivicCard} from './civic-card.js';
+import {createCivicExplorer} from './civic-explorer.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -46,7 +47,8 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   legislativeLookup={},legislativeOfficials=null,
   councilEnrollment=new Map(),enrollmentReady=false,
   councilLayer=null,selectedCouncil=null,
-  pollLayer=null,pollRequest=0,pollCache=new Map(),boroughIncome2025=null,boroughRace2025=null;
+  pollLayer=null,pollRequest=0,pollCache=new Map(),boroughIncome2025=null,boroughRace2025=null,
+  civicExplorer=null,ntaSpatialIndex=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -311,6 +313,7 @@ function closeMobileCivicCard(){
 }
 function resetMapPointLookup(){
   selectedMapPoint=null;selectedMapNeighborhood=null;
+  civicExplorer?.refreshPoint();
   if(map)map.closePopup();
   closeMobileCivicCard();
   if(mapPointMarker){map.removeLayer(mapPointMarker);mapPointMarker=null;}
@@ -420,6 +423,10 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
 function identifyCommunityAtPoint(latlng,neighborhood=null){
   if(!latlng||!Number.isFinite(latlng.lat)||!Number.isFinite(latlng.lng))return;
   selectedMapPoint={lat:latlng.lat,lng:latlng.lng};
+  if(!neighborhood&&ntaSpatialIndex){
+    const matchedNta=lookupPolygonAtPoint(ntaSpatialIndex,latlng.lat,latlng.lng);
+    if(matchedNta.status==='match')neighborhood=matchedNta.record;
+  }
   selectedMapNeighborhood=neighborhood;
   if(mapPointMarker)map.removeLayer(mapPointMarker);
   mapPointMarker=L.marker(selectedMapPoint,{
@@ -450,6 +457,7 @@ function identifyCommunityAtPoint(latlng,neighborhood=null){
     output.textContent='This map location cannot be checked. Select a valid point in NYC.';
   }
   showCivicPopup(latlng,neighborhood,match);
+  civicExplorer?.refreshPoint();
 }
 function updateCivicContext(borough, board=null){
   ui['borough-president'].textContent=borough?BOROUGH_PRESIDENTS[borough]:'Select a borough';
@@ -574,6 +582,7 @@ async function loadCommunityGeography(){
     ui['civic-layer'].title='Choose 2020 NTAs or 59 verified 2026 community boards ('+origin+')';
     document.getElementById('civic-source').textContent='Community districts: DCP 2026, 59 boards + 12 non-board special areas. '+origin+'.';
     if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+    civicExplorer?.refreshData();
   }catch(error){
     console.warn('Community board geography unavailable:',error);
     const option=ui['civic-layer'].querySelector('option[value="boards"]');
@@ -693,6 +702,7 @@ async function loadLegislativeDistricts(){
     document.getElementById('representation-source').textContent=
       'Official 2026 DCP Council, Senate, Assembly and congressional polygons verified; City Council and NY Senate officeholder names checked on October 31, 2026.';
     if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+    civicExplorer?.refreshData();
     if(enrollmentReady){
       initializeCouncilMap();
       if(ui['civic-layer'].value==='enrollment')render();
@@ -726,6 +736,7 @@ async function loadEducationGeography(){
     schoolDistrictByCode=new Map(schoolDistricts.map(x=>[x.code,x]));
     schoolDistrictSpatialIndex=indexCommunityDistricts(schoolDistricts);
     if(selectedMapPoint)identifyCommunityAtPoint(selectedMapPoint,selectedMapNeighborhood);
+    civicExplorer?.refreshData();
     schoolDistrictLayer=L.geoJSON(null,{
       style:f=>schoolDistrictStyle(schoolDistrictByCode.get(Number(f.properties.district))),
       onEachFeature:(f,layer)=>{
@@ -743,6 +754,7 @@ async function loadEducationGeography(){
     schoolPoints=validateSchoolLocations(source,manifest);
     schoolById=new Map(schoolPoints.map(s=>[s.id,s]));
     schoolMarkers=L.layerGroup().addTo(map);
+    civicExplorer?.refreshData();
     ui['civic-layer'].querySelector('[value="schools"]').disabled=false;
     schoolsOK=true;
   }catch(e){console.warn('NYSED school point map remains unavailable:',e);}
@@ -1157,6 +1169,7 @@ function render(){
     if(selected)showACSProfile(selected);
     if(visible.length)fitNYCBounds(L.geoJSON({type:'FeatureCollection',features:visible.map(r=>r.feature)}).getBounds(),{padding:[35,35]});
   }
+  civicExplorer?.bringToFront();
 }
 function search(){const found=findNta(records,ui.neighborhood.value,ui.borough.value);if(found){display(found);status('Selected '+found.name+', '+found.borough+'. Click any street in the neighborhood to view its community board.');}else{status('No matching neighborhood in the selected borough. Try another spelling or clear the borough filter.',true);}}
 async function setPollingSites(kind){
@@ -1208,6 +1221,21 @@ async function setPollingSites(kind){
   }
 }
 function wire(){
+  civicExplorer=createCivicExplorer({
+    map,
+    getData:()=>({records,ntaSpatialIndex,communityBoards,communitySpatialIndex,
+      schoolDistricts,schoolDistrictSpatialIndex,legislativeLookup,legislativeOfficials,schoolMarkers}),
+    getPoint:()=>selectedMapPoint,
+    onPoint:(latlng,neighborhood)=>identifyCommunityAtPoint(latlng,neighborhood),
+    onBaseMode:mode=>{
+      if(ui['civic-layer'].value===mode)return;
+      ui['civic-layer'].value=mode;
+      selected=null;selectedCommunity=null;selectedCouncil=null;
+      selectedSchool=null;selectedSchoolDistrict=null;
+      render();
+    },
+    onStatus:message=>status(message)
+  });
   for(const b of BOROUGHS){const o=document.createElement('option');o.value=b;o.textContent=b;ui.borough.append(o);}
   for(const id of ['borough','map-detail','neighborhood','search-button','reset'])ui[id].disabled=false;
   ui['map-detail'].addEventListener('change',()=>setMapDetail(ui['map-detail'].value));
@@ -1305,6 +1333,7 @@ function wire(){
     ui.borough.value='all';
     ui.neighborhood.value='';
     setMapDetail('streets');
+    civicExplorer?.clear();
     render();
     fitNYCBounds(NYC_BOUNDS,{padding:[35,35],animate:false});
     status('Map reset: all five boroughs, neighborhood colors, street grid and default filters.');
@@ -1341,6 +1370,7 @@ async function init(){
       const icon=L.divIcon({className:'borough-label',html:'<span>'+borough+'</span>',iconSize:[146,42],iconAnchor:[73,21]});
       L.marker(point,{icon,keyboard:true,title:'Explore '+borough}).on('click',()=>switchBorough(borough)).addTo(boroughLabels);
     }
+    ntaSpatialIndex=indexCommunityDistricts(records);
     initializeStreetMap(records.map(r=>r.feature));
     wire();render();
     setMapDetail(ui['map-detail'].value);
