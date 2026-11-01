@@ -40,3 +40,15 @@ The official Census release schedule lists the 2021–2025 ACS five-year release
 date as **TBD** as of October 31, 2026. Rebuild NTA tract aggregates only after
 that product arrives and quality controls, geography crosswalk, MOEs, and
 missingness have been reviewed.
+
+
+## Race and Hispanic-origin update (October 31, 2026)
+
+The same acquisition script now extracts official **2025 ACS one-year B03002** ethnicity-by-race counts for NYC's five boroughs. The source's groups are made mutually exclusive:
+non-Hispanic White alone, non-Hispanic Black alone, non-Hispanic Asian alone, Hispanic/Latino of any race, and all remaining non-Hispanic residents. Percentages use the borough population estimate as denominator. The final group is calculated as a residual and expressly includes other/multiracial non-Hispanic populations.
+
+Validated source records are written to `data/acs/borough_race_2025_verified.json`, and checked again in the browser before being shown. The 2025 one-year borough figures must **never** be mapped or attached to NTA neighborhood cards. The neighborhood demographic layers continue to use 2020–2024 five-year tract aggregates, the latest tract-level ACS product available as of this date.
+
+The 2025 race share values do not have calculated ratio margins of error in this implementation. Avoid claiming significance of small changes or differences, and do not silently treat these county-wide values as precise neighborhood estimates.
+
+Run `node --test tests/*.test.mjs` after committing and inspect the Census B03002 and B19013 county values manually before authorizing their publication. An unpublished verified JSON is not a populated 2025 data layer.
