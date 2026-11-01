@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=polling-sites-2026-1" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=borough-income-2025-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=polling-sites-2026-1"></script>
+  <script type="module" src="assets/js/app.js?v=borough-income-2025-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -99,6 +99,12 @@
           <p class="street-map-note" id="street-map-note" aria-live="polite">Street and block grids: OpenStreetMap. Neon outlines: official NYC DCP 2020 NTAs.</p>
         </div>
         <aside class="details" aria-live="polite"><div class="aside-kicker" id="profile-kicker">NEIGHBORHOOD PROFILE</div><h2 id="detail-name">Explore the five boroughs</h2><p id="detail-intro">Select a borough on the map to explore its official 2020 neighborhood areas.</p><dl id="detail-meta"></dl>
+          <section class="borough-income-2025" id="borough-income-2025" aria-label="Latest ACS borough income">
+            <h3>2025 borough household income</h3>
+            <p id="borough-income-2025-description">New: 2025 ACS one-year county estimates. These are separate from the 2020–2024 neighborhood data.</p>
+            <p id="borough-income-2025-value">Select a borough to view the official 2025 income table. Figures will appear here only after the five counties and their margins of error pass source validation.</p>
+            <a id="borough-income-2025-source" href="https://data.census.gov/table/ACSDT1Y2025.B19013" target="_blank" rel="noopener noreferrer">Official Census 2025 B19013 median household income table</a>
+          </section>
           <section class="party-profile" id="party-profile" hidden aria-live="polite">
             <h3 id="party-profile-title">City Council voter enrollment · February 2026</h3>
             <div id="party-profile-content"></div>
