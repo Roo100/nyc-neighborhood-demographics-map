@@ -25,13 +25,17 @@ but is independently implemented in NYC POP!'s existing Leaflet dashboard.
 
 - 23 categories in five groups: representation/community; schools/education;
   safety/city services; neighborhoods/planning; and voting/courts.
-- Eight locally supported choices: community districts, City Council, NY State
-  Assembly, NY State Senate, U.S. House, geographic school districts, K–12 school
-  locations, and 2020 NTA neighborhoods. Selection draws a temporary validated
-  polygon overlay or switches to the existing school-point map.
-- The other 15 reference categories are selectable in the guide, but they
-  **do not generate invented local boundaries**. They display a prominent
-  "not yet mapped here" explanation and a BetaNYC reference link.
+- Twelve map-enabled choices: eight existing validated local geographies
+  (community districts, Council, Assembly, Senate, congressional, school districts,
+  K–12 sites and 2020 NTAs), plus four **on-demand official NYC Open Data** layers:
+  NYPD police precincts (78), DSNY sanitation districts (59), FDNY fire
+  battalions (49), and Census ZIP Code Tabulation Areas (221). The latter
+  four are loaded only on selection and must pass strict count, unique-ID,
+  polygon and coordinate checks before appearing on the map.
+- The other 11 reference categories remain selectable, but they **do not
+  generate invented local boundaries**. They show an explicit unmapped notice
+  and a BetaNYC reference link. No external redirect occurs when selecting
+  any of the 12 mapped categories; an official source link is available separately.
 - Click a boundary to identify the verified district at that **point**; district
   boundaries do not align one-to-one with an NTA. The separate civic map card
   still shows community board, representatives and school-district context.
@@ -40,6 +44,20 @@ but is independently implemented in NYC POP!'s existing Leaflet dashboard.
   independent lookup.
 - The Clear boundary overlay button removes the temporary category layer.
   Reset Map also clears it; no shooting-dashboard files are touched.
+
+Official source references for the newly mapped categories:
+
+- [NYPD Police Precincts, DCP 26b](https://data.cityofnewyork.us/d/y76i-bdw7)
+- [DSNY Districts, September 2026](https://data.cityofnewyork.us/d/i6mn-amj2)
+- [FDNY Fire Battalions, DCP 26b](https://data.cityofnewyork.us/d/xzng-ft6f)
+- [Census ZIP Code Tabulation Areas, April 2026](https://data.cityofnewyork.us/d/35j5-n34v)
+
+Census ZCTAs are statistical approximate ZIP regions and **must not** be
+presented as USPS delivery address ZIP codes. DSNY districts are separately
+sourced even though their 59 service boundaries align with community boards.
+If the live official geometry service is unavailable, the UI fails closed and
+provides the official source link. These four datasets are not silently
+substituted with neighborhood or community-board polygons.
 
 Data source labels are kept separate from political party enrollment and ACS
 neighborhood data. Locally unmapped categories require official source
