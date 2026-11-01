@@ -17,6 +17,34 @@ This is an independent NYC neighborhood map. The existing Roo100/nyc-shootings-m
 - ACS neighborhood color layers for **approximate** median household income, poverty rates, and five mutually exclusive racial/ethnic shares; special-purpose/unreliable areas are gray
 - Special-purpose-area handling, mobile layout, loading and error feedback
 
+## Civic boundary category explorer (October 31, 2026)
+
+The **Your NYC civic guide → Explore NYC boundaries** section follows the
+organizational model of [BetaNYC Boundaries](https://boundaries.beta.nyc/?map=sd)
+but is independently implemented in NYC POP!'s existing Leaflet dashboard.
+
+- 23 categories in five groups: representation/community; schools/education;
+  safety/city services; neighborhoods/planning; and voting/courts.
+- Eight locally supported choices: community districts, City Council, NY State
+  Assembly, NY State Senate, U.S. House, geographic school districts, K–12 school
+  locations, and 2020 NTA neighborhoods. Selection draws a temporary validated
+  polygon overlay or switches to the existing school-point map.
+- The other 15 reference categories are selectable in the guide, but they
+  **do not generate invented local boundaries**. They display a prominent
+  "not yet mapped here" explanation and a BetaNYC reference link.
+- Click a boundary to identify the verified district at that **point**; district
+  boundaries do not align one-to-one with an NTA. The separate civic map card
+  still shows community board, representatives and school-district context.
+- "School district" is a geographic administrative boundary, **not** an
+  address-specific K–12 attendance zone. NYCPS School Search provides that
+  independent lookup.
+- The Clear boundary overlay button removes the temporary category layer.
+  Reset Map also clears it; no shooting-dashboard files are touched.
+
+Data source labels are kept separate from political party enrollment and ACS
+neighborhood data. Locally unmapped categories require official source
+validation and geographic QA before adding further GIS polygons.
+
 ## Geographic sources, validation, and limits
 - Boundaries: official NYC DCP 2020 NTAs, [dataset 9nt8-h7nd](https://data.cityofnewyork.us/d/9nt8-h7nd). The checked-in snapshot is `data/nta2020.geojson`, with `data/nta2020-validation.json` recording the 262-feature count, five boroughs, coordinate validation, special-purpose classification, and SHA-256.
 - Tract-to-NTA equivalency: official NYC DCP [dataset hm78-6dwm](https://data.cityofnewyork.us/d/hm78-6dwm); its raw geographic join property is `ntacode`, standardized to `nta2020` in our output file.
