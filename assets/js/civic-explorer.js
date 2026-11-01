@@ -3,6 +3,7 @@
 import {CIVIC_CATEGORY_GROUPS,getCivicCategory} from './civic-categories.js';
 import {parseBoroCd,lookupCommunityDistrict,lookupPolygonAtPoint} from './civic.js';
 import {identifyLegislators,officialForDistrict} from './representation.js';
+import {EXTRA_CIVIC_SOURCES,fetchOfficialExtraCivic} from './extra-civic.js';
 
 export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onStatus}){
   const L=window.L;
@@ -11,8 +12,10 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
   const clearButton=document.getElementById('civic-explorer-clear');
   if(!host||!result||!clearButton||!L)throw new Error('NYC civic explorer controls unavailable');
   let selected=null, overlay=null;
+  const officialExtra=new Map(),pendingExtra=new Map(),extraErrors=new Map();
 
   function recordsFor(category,data){
+    if(category&&EXTRA_CIVIC_SOURCES[category.id])return officialExtra.get(category.id)?.records||[];
     switch(category?.native){
       case 'community':return data.communityBoards||[];
       case 'schooldistricts':return data.schoolDistricts||[];
@@ -27,7 +30,10 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
     if(category.native==='schoolsites')return 'K–12 schools are individual sites, not attendance-zone boundaries.';
     const lat=point.lat,lng=point.lng;
     let hit;
-    if(category.native==='community'){
+    if(EXTRA_CIVIC_SOURCES[category.id]){
+      hit=lookupPolygonAtPoint(officialExtra.get(category.id)?.index,lat,lng);
+      if(hit.status==='match')return hit.record.name;
+    }else if(category.native==='community'){
       hit=lookupCommunityDistrict(data.communitySpatialIndex,lat,lng);
       if(hit.status==='board')return hit.record.name;
       if(hit.status==='joint_interest')return 'Joint Interest Area — no ordinary community board';
@@ -68,20 +74,28 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
         'The K–12 school-location layer is still loading or temporarily unavailable.';
     }else{
       const count=recordsFor(category,data).length;
-      info.textContent=count?
-        count.toLocaleString()+' verified district features · '+pointResult(category,getPoint(),data):
-        'Verified geographic data are loading or temporarily unavailable.';
+      if(EXTRA_CIVIC_SOURCES[category.id]&&pendingExtra.has(category.id)){
+        info.textContent='Loading official NYC Open Data boundaries for this category…';
+      }else if(EXTRA_CIVIC_SOURCES[category.id]&&extraErrors.has(category.id)){
+        info.textContent='The official boundaries could not be loaded or did not pass validation. Select the category again to retry. No substitute districts are shown.';
+      }else{
+        info.textContent=count?
+          count.toLocaleString()+' verified district features · '+pointResult(category,getPoint(),data):
+          'Verified geographic data are loading or temporarily unavailable.';
+      }
     }
     result.append(info);
     const description=document.createElement('p');
     description.className='civic-category-description';
     description.textContent=category.description;
     result.append(description);
-    if(!category.native||category.native==='schoolsites'){
+    if(!category.native||category.native==='schoolsites'||EXTRA_CIVIC_SOURCES[category.id]){
       const link=document.createElement('a');
-      link.href=category.native==='schoolsites'?'https://schoolsearch.schools.nyc/':category.source;
+      link.href=category.native==='schoolsites'?'https://schoolsearch.schools.nyc/':
+        EXTRA_CIVIC_SOURCES[category.id]?.source||category.source;
       link.target='_blank';link.rel='noopener noreferrer';
-      link.textContent=category.native==='schoolsites'?'Check school zoning by address · NYCPS':'Explore this category on BetaNYC';
+      link.textContent=category.native==='schoolsites'?'Check school zoning by address · NYCPS':
+        EXTRA_CIVIC_SOURCES[category.id]?'View official NYC Open Data source':'Explore this category on BetaNYC';
       result.append(link);
     }
   }
@@ -103,6 +117,31 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
     const category=getCivicCategory(id);
     if(!category)return;
     clearOverlay();selected=id;updateButtons();
+    const source=EXTRA_CIVIC_SOURCES[id];
+    if(source&&!officialExtra.has(id)){
+      if(!pendingExtra.has(id)){
+        extraErrors.delete(id);
+        const request=fetchOfficialExtraCivic(id);
+        pendingExtra.set(id,request);
+        request.then(validated=>{
+          officialExtra.set(id,validated);
+          pendingExtra.delete(id);
+          extraErrors.delete(id);
+          if(selected===id)select(id);
+        }).catch(error=>{
+          pendingExtra.delete(id);
+          extraErrors.set(id,error?.message||'Unknown geometry error');
+          console.warn('Official '+id+' boundaries unavailable:',error);
+          if(selected===id){
+            renderStatus();
+            onStatus(source.title+' boundaries could not be verified; source link remains available.');
+          }
+        });
+      }
+      renderStatus();
+      onStatus('Loading '+source.title+' polygons from official NYC Open Data…');
+      return;
+    }
     const data=getData();
     if(category.native==='schoolsites'){
       if(data.schoolMarkers){
@@ -168,7 +207,7 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
       const label=document.createElement('span');
       label.textContent=cat.emoji+' '+cat.label;
       const meta=document.createElement('small');
-      meta.textContent=cat.native?'Map available':'Reference';
+      meta.textContent=EXTRA_CIVIC_SOURCES[cat.id]?'NYC Open Data layer':cat.native?'Map available':'Reference';
       button.append(label,meta);controls.append(button);
     }
     details.append(controls);host.append(details);
@@ -179,5 +218,10 @@ export function createCivicExplorer({map,getData,getPoint,onPoint,onBaseMode,onS
   });
   clearButton.addEventListener('click',clear);
   renderStatus();
-  return {clear,select,refreshData,refreshPoint,bringToFront};
+  function selectedBoundaryAt(point){
+    const category=getCivicCategory(selected);
+    if(!category?.native||!point||category.native==='schoolsites')return null;
+    return {label:category.label,value:pointResult(category,point,getData())};
+  }
+  return {clear,select,refreshData,refreshPoint,bringToFront,selectedBoundaryAt};
 }
