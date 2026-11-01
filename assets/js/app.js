@@ -340,63 +340,66 @@ function addCouncilEnrollmentToPopup(root,latlng,legislative){
   section.append(summary,list,note);root.append(section);
 }
 function showCivicPopup(latlng,neighborhood,communityMatch){
-  // Compact demographic preview: keep the full uncertainty detail in the
-  // adjacent neighborhood profile. Never anchor a tall popup offscreen.
-  const root=document.createElement('div');
-  root.className='nyc-pop-info-card';
-  const eyebrow=document.createElement('div');
-  eyebrow.className='nyc-pop-info-eyebrow';
-  eyebrow.textContent='NEIGHBORHOOD SNAPSHOT';
-  root.append(eyebrow);
+  // Compact, fixed-position demographic card inside the map. This never uses
+  // Leaflet's anchored popup, so no selected point can move it offscreen.
+  map.closePopup();
+  closeMobileCivicCard();
+  const root=document.createElement('section');
+  root.className='nyc-demographic-preview';
+  root.setAttribute('role','region');
+  root.setAttribute('aria-label','Selected neighborhood demographics');
+  const close=document.createElement('button');
+  close.type='button';close.className='nyc-demographic-preview-close';
+  close.textContent='×';close.setAttribute('aria-label','Close demographic preview');
+  close.addEventListener('click',()=>root.remove());
+  root.append(close);
   const title=document.createElement('h3');
-  title.className='nyc-pop-info-title';
-  title.textContent=neighborhood?.name||'Selected NYC location';
+  title.textContent=neighborhood?.name||'Selected map location';
   root.append(title);
   if(neighborhood?.borough){
     const subtitle=document.createElement('p');
-    subtitle.className='nyc-pop-info-subtitle';
+    subtitle.className='nyc-demographic-preview-period';
     subtitle.textContent=neighborhood.borough+' · ACS 2020–2024';
     root.append(subtitle);
   }
   const information=neighborhood&&acsReady?acsProfileRows(neighborhood):null;
-  if(information){
+  if(neighborhood?.special){
+    const message=document.createElement('p');
+    message.className='nyc-demographic-preview-message';
+    message.textContent='Special-purpose area. Reliable residential demographics are not available for this location.';
+    root.append(message);
+  }else if(information){
     const facts=document.createElement('dl');
-    facts.className='nyc-pop-info-facts';
+    const shortLabels={
+      'Approx. household median income':'Approx. median income',
+      'Poverty rate':'Poverty',
+      'White non-Hispanic':'White',
+      'Black non-Hispanic':'Black',
+      'Asian non-Hispanic':'Asian',
+      'Hispanic (any race)':'Hispanic / Latino',
+      'Other non-Hispanic':'Other'
+    };
     for(const [label,value] of information.rows){
       if(label==='Poverty margin of error')continue;
       const dt=document.createElement('dt'),dd=document.createElement('dd');
-      dt.textContent=label.replace('Approx. household median income','Approx. median income')
-        .replace(' non-Hispanic','').replace(' (any race)',' / Latino');
-      // Display the estimate only; the sidebar retains complete 90% MOEs.
-      dd.textContent=label==='Approx. household median income'||label==='Poverty rate'
-        ?value:value.replace(/ \(±.*?\)$/,'');
+      dt.textContent=shortLabels[label]||label;
+      dd.textContent=value.replace(/ \\(±.*?\\)$/,'');
       facts.append(dt,dd);
     }
     root.append(facts);
     const note=document.createElement('p');
-    note.className='nyc-pop-info-disclaimer';
-    note.textContent='Approximate ACS estimates. Full margins of error and methodology appear in the neighborhood profile.';
+    note.className='nyc-demographic-preview-note';
+    note.textContent='Approximate estimates; see the profile for uncertainty and sources.';
     root.append(note);
   }else{
-    const note=document.createElement('p');
-    note.className='nyc-pop-info-disclaimer';
-    note.textContent=neighborhood?'Demographic data are loading or unavailable.':'Select a neighborhood to see its demographic estimates.';
-    root.append(note);
+    const message=document.createElement('p');
+    message.className='nyc-demographic-preview-message';
+    message.textContent=neighborhood?'Demographic estimates are loading or unavailable.':'Select a neighborhood to see its demographics.';
+    root.append(message);
   }
-  map.closePopup();
-  closeMobileCivicCard();
-  const overlay=document.createElement('section');
-  overlay.className='nyc-pop-mobile-overlay nyc-pop-snapshot-overlay';
-  overlay.setAttribute('role','region');
-  overlay.setAttribute('aria-label','Neighborhood demographic snapshot');
-  const close=document.createElement('button');
-  close.type='button';close.className='nyc-pop-mobile-close';
-  close.textContent='×';close.setAttribute('aria-label','Close neighborhood demographics');
-  close.addEventListener('click',()=>overlay.remove());
-  overlay.append(close,root);
-  L.DomEvent.disableClickPropagation(overlay);
-  L.DomEvent.disableScrollPropagation(overlay);
-  map.getContainer().append(overlay);
+  L.DomEvent.disableClickPropagation(root);
+  L.DomEvent.disableScrollPropagation(root);
+  map.getContainer().append(root);
 }
 function identifyCommunityAtPoint(latlng,neighborhood=null){
   if(!latlng||!Number.isFinite(latlng.lat)||!Number.isFinite(latlng.lng))return;
