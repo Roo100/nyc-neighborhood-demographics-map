@@ -7,6 +7,7 @@ import {ENROLLMENT_FILE,PARTY_OPTIONS,validateCouncilEnrollment,enrollmentShare,
 import {MAYOR_2025_CITYWIDE,validateCitywideMayoralResult} from './elections.js';
 import {fetchNYCPollSites,OFFICIAL_POLL_LOOKUP} from './polling.js';
 import {BOROUGH_INCOME_2025_FILE,validateBoroughIncome2025} from './borough-income.js';
+import {BOROUGH_RACE_2025_FILE,validateBoroughRace2025,RACE_GROUPS} from './borough-race.js';
 const LOCAL_GEOJSON = 'data/nta2020.geojson';
 const OFFICIAL_GEOJSON = 'https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=5000';
 // Tile access is for ordinary interactive viewing only; no prefetch or tile scraping.
@@ -44,7 +45,7 @@ let records=[], map, geoLayer, boroughLabels, landmarkLayer, streetTiles, outsid
   legislativeLookup={},legislativeOfficials=null,
   councilEnrollment=new Map(),enrollmentReady=false,
   councilLayer=null,selectedCouncil=null,
-  pollLayer=null,pollRequest=0,pollCache=new Map(),boroughIncome2025=null;
+  pollLayer=null,pollRequest=0,pollCache=new Map(),boroughIncome2025=null,boroughRace2025=null;
 function status(message,error=false){ui.status.textContent=message;ui.status.classList.toggle('error',error);}
 function startMap(){
   if(!window.L) throw new Error('Leaflet failed to load. Check your network connection.');
@@ -891,6 +892,39 @@ async function loadCertifiedMayorResults(){
   }
 }
 const BOROUGH_COUNTY_FIPS={Bronx:'36005',Brooklyn:'36047',Manhattan:'36061',Queens:'36081','Staten Island':'36085'};
+function updateBoroughRace2025(){
+  const borough=ui.borough.value;
+  const panel=document.getElementById('borough-race-2025');
+  const description=document.getElementById('borough-race-2025-description');
+  const value=document.getElementById('borough-race-2025-value');
+  const link=document.getElementById('borough-race-2025-source');
+  if(!panel||!value||!link||!description)return;
+  panel.hidden=ui['civic-layer'].value!=='nta';
+  const fips=BOROUGH_COUNTY_FIPS[borough],record=boroughRace2025?.get(borough);
+  value.replaceChildren();
+  if(!fips){
+    description.textContent='The 2025 one-year ACS is the latest borough-level racial/ethnic source. Choose a borough; neighborhood profiles use the 2020–2024 five-year ACS.';
+    value.textContent='Select a borough to explore the latest available Census data.';
+    link.href='https://data.census.gov/table/ACSDT1Y2025.B03002?g=050XX00US36005,36047,36061,36081,36085';
+    link.textContent='Official 2025 NYC county race/ethnicity table';
+    return;
+  }
+  description.textContent=borough+' · ACS 2025 one-year B03002. Five non-overlapping racial/ethnic categories.';
+  link.href='https://data.census.gov/table/ACSDT1Y2025.B03002?g=050XX00US'+fips;
+  link.textContent='Official 2025 race/ethnicity source for '+borough;
+  if(!record){
+    value.textContent='2025 borough percentages are pending independent Census source validation. No unverified percentages are displayed.';
+    return;
+  }
+  const list=document.createElement('dl');
+  list.className='borough-race-facts';
+  for(const group of RACE_GROUPS){
+    const name=document.createElement('dt'),share=document.createElement('dd');
+    name.textContent=group;share.textContent=record.shares_pct[group].toFixed(1)+'%';
+    list.append(name,share);
+  }
+  value.append(list);
+}
 function updateBoroughIncome2025(){
   const borough=ui.borough.value;
   const panel=document.getElementById('borough-income-2025');
@@ -913,6 +947,15 @@ function updateBoroughIncome2025(){
     link.href='https://data.census.gov/table/ACSDT1Y2025.B19013?g=050XX00US36005,36047,36061,36081,36085';
   }
 }
+async function loadBoroughRace2025(){
+  try{
+    boroughRace2025=validateBoroughRace2025(await download(BOROUGH_RACE_2025_FILE));
+  }catch(error){
+    console.info('2025 borough race/ethnicity remains pending source verification:',error.message);
+    boroughRace2025=null;
+  }
+  updateBoroughRace2025();
+}
 async function loadBoroughIncome2025(){
   try{
     boroughIncome2025=validateBoroughIncome2025(await download(BOROUGH_INCOME_2025_FILE));
@@ -927,6 +970,7 @@ async function loadBoroughIncome2025(){
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
   updateBoroughIncome2025();
+  updateBoroughRace2025();
   const enrollmentMode=mode==='enrollment'&&!!councilLayer;
   ui['political-field'].hidden=!enrollmentMode;
   ui['political-metric'].disabled=!enrollmentMode;
@@ -1293,6 +1337,7 @@ async function init(){
     void loadEducationGeography();
     void loadACSGeography();
     void loadBoroughIncome2025();
+    void loadBoroughRace2025();
     void loadLegislativeDistricts();
     void loadCouncilEnrollment();
     // Certified June 2026 primary results are rendered directly from the verified BOE recap.
