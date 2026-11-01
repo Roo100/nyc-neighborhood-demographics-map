@@ -883,8 +883,31 @@ async function loadCertifiedMayorResults(){
     totals.replaceChildren();host.replaceChildren();
   }
 }
+const BOROUGH_COUNTY_FIPS={Bronx:'36005',Brooklyn:'36047',Manhattan:'36061',Queens:'36081','Staten Island':'36085'};
+function updateBoroughIncome2025(){
+  const borough=ui.borough.value;
+  const panel=document.getElementById('borough-income-2025');
+  const value=document.getElementById('borough-income-2025-value');
+  const description=document.getElementById('borough-income-2025-description');
+  const link=document.getElementById('borough-income-2025-source');
+  if(!panel||!value||!description||!link)return;
+  const code=BOROUGH_COUNTY_FIPS[borough];
+  panel.hidden=ui['civic-layer'].value!=='nta';
+  if(code){
+    description.textContent=borough+' (county '+code+') · 2025 ACS one-year estimates, 2025 inflation-adjusted dollars.';
+    value.textContent='2025 Census borough figures are available at the official source. The dashboard is withholding the numeric value until B19013 estimate and 90% margin of error are checked against the release.';
+    link.textContent='View official 2025 Census income for '+borough;
+    link.href='https://data.census.gov/table/ACSDT1Y2025.B19013?g=050XX00US'+code;
+  }else{
+    description.textContent='2025 ACS one-year figures are published for each of the five NYC boroughs (counties).';
+    value.textContent='Choose a borough above to open the correct official 2025 Census income table. Neighborhood income continues to use the 2020–2024 five-year ACS.';
+    link.textContent='Explore official 2025 Census county income tables';
+    link.href='https://data.census.gov/table/ACSDT1Y2025.B19013?g=050XX00US36005,36047,36061,36081,36085';
+  }
+}
 function render(){
   const borough=ui.borough.value,mode=ui['civic-layer'].value;
+  updateBoroughIncome2025();
   const enrollmentMode=mode==='enrollment'&&!!councilLayer;
   ui['political-field'].hidden=!enrollmentMode;
   ui['political-metric'].disabled=!enrollmentMode;
