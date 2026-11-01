@@ -12,7 +12,7 @@ This is an independent NYC neighborhood map. The existing Roo100/nyc-shootings-m
 - OpenStreetMap street-grid basemap with preserved zoom controls, metric distance scale, neon-only view and official attribution
 - NYC 2020 Neighborhood Tabulation Areas (NTAs) across five boroughs
 - Borough selector and neighborhood name search; NTA codes remain internal rather than appearing in public popup cards
-- Clickable neighborhoods and map-point popup showing the correct 2026 community board and geographic school district; borough presidents and NYC government resource links
+- Clickable map-point **civic pop-up** showing the 2026 community board, borough president, point-intersected City Council / NY Senate / Assembly / U.S. House districts (verified representative names where available), and the 2026 geographic school district. It links to NYCPS's address-and-grade school zone finder; a geographic school district is **not** an attendance zone. Income, poverty and racial demographics remain separate in map filters and the side profile.
 - Interactive 59 community boards, 32 NYC geographic school districts, and 2,944 NYSED source-listed K–12 school sites with search and category filters
 - ACS neighborhood color layers for **approximate** median household income, poverty rates, and five mutually exclusive racial/ethnic shares; special-purpose/unreliable areas are gray
 - Special-purpose-area handling, mobile layout, loading and error feedback
