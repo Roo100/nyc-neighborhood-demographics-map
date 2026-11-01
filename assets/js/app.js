@@ -387,6 +387,8 @@ function showCivicPopup(latlng,neighborhood,communityMatch){
     }
     section.append(list);root.append(section);
   };
+  const boundary=civicExplorer?.selectedBoundaryAt(latlng);
+  if(boundary)addSection('Selected boundary',[[boundary.label,boundary.value]]);
   addSection('Community board',[['Board at this point',card.board]]);
   addSection('Elected representatives',card.officials);
   addSection('Schools and zoning',[['Geographic district',card.school],
