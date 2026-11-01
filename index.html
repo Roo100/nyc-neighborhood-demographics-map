@@ -6,9 +6,9 @@
   <title>NYC POP! | Five-Borough Neighborhood Atlas</title>
   <meta name="description" content="Explore a bold, comic-style map of New York City’s five boroughs, landmark icons and official 2020 neighborhood boundaries." />
   <link rel="stylesheet" href="assets/css/leaflet.css?v=1.9.4-local-1" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=fixed-docked-preview-2026-10-31-2" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=latest-acs-2025-borough-1" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script type="module" src="assets/js/app.js?v=borough-map-switch-2026-10-31-1"></script>
+  <script type="module" src="assets/js/app.js?v=latest-acs-2025-borough-1"></script>
 </head>
 <body>
   <div class="shell">
@@ -104,6 +104,12 @@
             <p id="borough-income-2025-description">New: 2025 ACS one-year county estimates. These are separate from the 2020–2024 neighborhood data.</p>
             <p id="borough-income-2025-value">Select a borough to view the official 2025 income table. Figures will appear here only after the five counties and their margins of error pass source validation.</p>
             <a id="borough-income-2025-source" href="https://data.census.gov/table/ACSDT1Y2025.B19013" target="_blank" rel="noopener noreferrer">Official Census 2025 B19013 median household income table</a>
+          </section>
+          <section class="borough-race-2025" id="borough-race-2025" aria-label="Latest borough racial and ethnic demographics">
+            <h3>2025 borough racial and ethnic composition</h3>
+            <p id="borough-race-2025-description">Latest 2025 ACS one-year race and Hispanic-origin figures, distinct from the 2020–2024 neighborhood estimates.</p>
+            <div id="borough-race-2025-value" role="status">Choose a borough for official Census 2025 B03002 data. Values are withheld until all five counties pass source validation.</div>
+            <a id="borough-race-2025-source" href="https://data.census.gov/table/ACSDT1Y2025.B03002" target="_blank" rel="noopener noreferrer">Official 2025 Census race/ethnicity table</a>
           </section>
           <section class="party-profile" id="party-profile" hidden aria-live="polite">
             <h3 id="party-profile-title">City Council voter enrollment · February 2026</h3>
